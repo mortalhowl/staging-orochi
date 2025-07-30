@@ -31,3 +31,19 @@ export interface TicketType {
   created_at: string;
   updated_at: string;
 }
+
+export interface Article {
+  id: string;
+  event_id: string | null;
+  slug: string;
+  title: string;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+  // Dùng để hiển thị tên sự kiện sau khi JOIN
+  events: {
+    id: string;
+    title: string;
+  } | null;
+}

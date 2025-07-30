@@ -84,7 +84,7 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
     }
   }, [coverFile]);
 
- const handleSubmit = async (values: EventFormValues) => {
+  const handleSubmit = async (values: EventFormValues) => {
     setLoading(true);
     try {
       let finalCoverImageUrl = values.cover_image_url;
@@ -97,11 +97,11 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
           .upload(fileName, coverFile);
 
         if (uploadError) throw uploadError;
-        
+
         const { data: urlData } = supabase.storage.from('event-images').getPublicUrl(data.path);
         finalCoverImageUrl = urlData.publicUrl;
       }
-      
+
       // 2. LOGIC TẠO SLUG
       let finalSlug = eventToEdit?.slug; // Mặc định giữ slug cũ nếu đang sửa
 
@@ -148,7 +148,7 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
       setLoading(false);
     }
   };
-  
+
   return (
     <Modal opened={opened} onClose={onClose} title={isEditing ? 'Cập nhật sự kiện' : 'Tạo sự kiện mới'} centered size="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>

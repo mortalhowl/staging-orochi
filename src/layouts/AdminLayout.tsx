@@ -20,6 +20,7 @@ import {
   IconSun,
   IconMoon,
   IconSettings,
+  IconBook
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -191,6 +192,21 @@ export function AdminLayout() {
             </Transition>
           }
           leftSection={<IconTicket size={20} />}
+        />
+        <NavLink
+          href="/admin/articles"
+          style={{ height: rem(40) }}
+          label={
+            <Transition
+              mounted={sidebarOpened && !isTransitioning}
+              transition="fade"
+              duration={200}
+              timingFunction="ease"
+            >
+              {(styles) => <span style={styles}>Bài viết</span>}
+            </Transition>
+          }
+          leftSection={<IconBook size={20} />}
         />
         <NavLink
           href="/admin/settings"

@@ -3,6 +3,7 @@ import { Title, Stack, Paper, Center } from '@mantine/core';
 import ScrollToTop from './components/common/ScrollToTop';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { AdminLayout } from './layouts/AdminLayout';
+import { ArticlesPage } from './pages/admin/ArticlesPage';
 
 // import pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -41,6 +42,7 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/events" element={<EventsPage />} />
+            <Route path="/admin/articles" element={<ArticlesPage />} />
           </Route>
         </Route>
       </Routes>
