@@ -1,9 +1,9 @@
-import { Modal, Button, Stack, TextInput, Select, rem, Tabs, FileInput, Image, Text } from '@mantine/core';
+import { Modal, Button, Stack, TextInput, Select, rem, Tabs, FileInput, Image, Text, Switch } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabaseClient';
-import type { Article } from '../../../types';
+import type { Article, ArticleStatus } from '../../../types';
 import { RichTextEditor, Link } from '@mantine/tiptap';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -28,6 +28,7 @@ export function ArticleFormModal({ opened, onClose, onSuccess, events, articleTo
         initialValues: {
             title: '',
             event_id: null as string | null,
+            status: 'public' as ArticleStatus,
             image_url: '',
         },
         validate: {
@@ -50,6 +51,7 @@ export function ArticleFormModal({ opened, onClose, onSuccess, events, articleTo
             form.setValues({
                 title: articleToEdit.title,
                 event_id: articleToEdit.event_id,
+                status: articleToEdit.status,
                 image_url: articleToEdit.image_url || '',
             });
             editor?.commands.setContent(articleToEdit.content || '');
@@ -117,6 +119,7 @@ export function ArticleFormModal({ opened, onClose, onSuccess, events, articleTo
                 slug: finalSlug, // 3. Thêm slug vào dữ liệu
                 content,
                 image_url: finalImageUrl,
+                status: values.status,
             };
 
             if (isEditing) {
@@ -192,6 +195,13 @@ export function ArticleFormModal({ opened, onClose, onSuccess, events, articleTo
                             <TextInput label="URL Ảnh bìa" placeholder="https://example.com/image.png" {...form.getInputProps('image_url')} />
                         </Tabs.Panel>
                     </Tabs>
+
+                    <Switch
+                        label="Công khai bài viết"
+                        // Chuyển đổi giữa boolean (Switch) và string (database)
+                        checked={form.values.status === 'public'}
+                        onChange={(event) => form.setFieldValue('status', event.currentTarget.checked ? 'public' : 'hidden')}
+                    />
 
                     <Button type="submit" mt="md" loading={loading}>Lưu bài viết</Button>
                 </Stack>

@@ -10,6 +10,8 @@ export interface Event {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  sale_start_time: string | null;
+  sale_end_time: string | null; 
 }
 
 export interface Sorting {
@@ -32,6 +34,12 @@ export interface TicketType {
   updated_at: string;
 }
 
+export interface EventWithDetails extends Event {
+  ticket_types: TicketType[];
+  articles: Article[];
+}
+
+export type ArticleStatus = 'public' | 'hidden';
 export interface Article {
   id: string;
   event_id: string | null;
@@ -41,7 +49,7 @@ export interface Article {
   image_url: string | null;
   created_at: string;
   updated_at: string;
-  // Dùng để hiển thị tên sự kiện sau khi JOIN
+  status: ArticleStatus;
   events: {
     id: string;
     title: string;

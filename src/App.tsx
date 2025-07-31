@@ -14,6 +14,9 @@ import { LoginPage } from './pages/admin/LoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { EventsPage } from './pages/admin/EventsPage';
 import { ArticlesPage } from './pages/admin/ArticlesPage';
+import { EventDetailPage } from './pages/EventDetailPage';
+import { SettingsPage } from './pages/admin/SettingsPage';
+import { BankConfigPage } from './pages/admin/BankConfigPage';
 
 export function App() {
   return (
@@ -23,8 +26,7 @@ export function App() {
         {/* === PUBLIC ROUTES === */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
-          {/* <Route path="/events/:slug" element={<EventDetailPage />} /> */}
-          {/* Các trang public khác sẽ được thêm vào đây */}
+          <Route path="/events/:slug" element={<EventDetailPage />} />
         </Route>
 
         {/* === ADMIN ROUTES === */}
@@ -34,6 +36,8 @@ export function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/events" element={<EventsPage />} />
             <Route path="/admin/articles" element={<ArticlesPage />} />
+            <Route path="/admin/settings" element={<SettingsPage />} />
+            <Route path="/admin/settings/bank" element={<BankConfigPage />} />
           </Route>
         </Route>
       </Routes>

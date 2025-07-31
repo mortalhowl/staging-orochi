@@ -1,4 +1,4 @@
-import { Table, Checkbox, LoadingOverlay, Text, Tooltip } from '@mantine/core';
+import { Table, Checkbox, LoadingOverlay, Text, Tooltip, Badge } from '@mantine/core';
 import type { Article } from '../../../types';
 import { formatDate } from '../../../utils/FormatDate';
 
@@ -36,6 +36,11 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
             </Table.Td>
             <Table.Td onClick={() => onRowClick(article.id)}>{article.events?.title || 'Không có'}</Table.Td>
             <Table.Td onClick={() => onRowClick(article.id)}>{formatDate(article.created_at)}</Table.Td>
+            <Table.Td>
+        <Badge color={article.status === 'public' ? 'green' : 'gray'}>
+          {article.status === 'public' ? 'Công khai' : 'Ẩn'}
+        </Badge>
+      </Table.Td>
         </Table.Tr>
     ));
 
@@ -57,6 +62,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
                         <Table.Th>Tên bài viết</Table.Th>
                         <Table.Th>Sự kiện liên quan</Table.Th>
                         <Table.Th>Ngày tạo</Table.Th>
+                        <Table.Th>Trạng thái</Table.Th>
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -64,7 +70,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
                         rows
                     ) : (
                         <Table.Tr>
-                            <Table.Td colSpan={4} align="center">
+                            <Table.Td colSpan={5} align="center">
                                 Không có bài viết nào
                             </Table.Td>
                         </Table.Tr>

@@ -36,7 +36,7 @@ function EventSlide({ event }: { event: Event }) {
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          <Title order={1} c="blue.6" mb="md">
+          <Title order={1} c="#008a87" mb="md">
             {event.title.toUpperCase()}
           </Title>
           <Text lineClamp={5} mb="xl">
@@ -45,9 +45,10 @@ function EventSlide({ event }: { event: Event }) {
           <Button
             component={Link}
             to={`/events/${event.slug}`}
-            size="lg"
+            size="md"
             radius="md"
             style={{ alignSelf: 'flex-start' }}
+            bg="#008a87"
           >
             Mua vé
           </Button>
@@ -72,7 +73,7 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
           {article.events.title}
         </Badge>
       )}
-      <Title order={2} c="teal.6" mb="md">
+      <Title order={2} c="#008a87" mb="md" fw="bold">
         {article.title?.toUpperCase()}
       </Title>
       <Text lineClamp={5}>
@@ -109,19 +110,19 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
     <Grid gutter="xl" align="center" my="xl">
       {reverse ? (
         <>
-          <Grid.Col span={{ base: 12, md: 6 }} order={{ base: 2, md: 1 }}>
+          <Grid.Col span={{ base: 12, md: 7 }} order={{ base: 2, md: 1 }}>
             {content}
           </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 6 }} order={{ base: 1, md: 2 }}>
+          <Grid.Col span={{ base: 12, md: 5 }} order={{ base: 1, md: 2 }}>
             {image}
           </Grid.Col>
         </>
       ) : (
         <>
-          <Grid.Col span={{ base: 12, md: 6 }}>
+          <Grid.Col span={{ base: 12, md: 5 }}>
             {image}
           </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 6 }}>
+          <Grid.Col span={{ base: 12, md: 7 }}>
             {content}
           </Grid.Col>
         </>
@@ -149,6 +150,7 @@ export function HomePage() {
       const articlesPromise = supabase
         .from('articles')
         .select('*, events(title, slug)')
+        .eq('status', 'public')
         .not('event_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10);

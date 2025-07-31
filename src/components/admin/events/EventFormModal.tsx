@@ -1,4 +1,4 @@
-import { Modal, Button, Stack, TextInput, Textarea, Switch, Tabs, FileInput, Image, rem } from '@mantine/core';
+import { Modal, Button, Stack, TextInput, Textarea, Switch, Tabs, FileInput, Image, rem, Divider } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -8,12 +8,15 @@ import { supabase } from '../../../services/supabaseClient';
 import type { Event } from '../../../types';
 import slugify from 'slugify';
 
+// 1. Cập nhật interface cho form để bao gồm thời gian bán vé
 interface EventFormValues {
   title: string;
   description: string;
   location: string;
   start_time: Date | null;
   end_time: Date | null;
+  sale_start_time: Date | null; // Thêm mới
+  sale_end_time: Date | null;   // Thêm mới
   cover_image_url: string;
   is_active: boolean;
 }
@@ -27,8 +30,8 @@ interface EventFormModalProps {
 
 export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: EventFormModalProps) {
   const [loading, setLoading] = useState(false);
-  const [coverFile, setCoverFile] = useState<File | null>(null); // State cho file upload
-  const [imagePreview, setImagePreview] = useState<string | null>(null); // State cho ảnh xem trước
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const isEditing = !!eventToEdit;
 
   const form = useForm<EventFormValues>({
@@ -38,6 +41,8 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
       location: '',
       start_time: null,
       end_time: null,
+      sale_start_time: null, // Thêm mới
+      sale_end_time: null,   // Thêm mới
       cover_image_url: '',
       is_active: true,
     },
@@ -51,8 +56,36 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
         }
         return null;
       },
+      // (Tùy chọn) Thêm validation cho thời gian bán vé
+      sale_end_time: (value, values) => {
+        if (values.sale_start_time && value && value <= values.sale_start_time) {
+          return 'Thời gian kết thúc bán vé phải sau thời gian bắt đầu';
+        }
+        return null;
+      },
     },
   });
+
+  useEffect(() => {
+    if (eventToEdit && opened) {
+      form.setValues({
+        title: eventToEdit.title,
+        description: eventToEdit.description || '',
+        location: eventToEdit.location || '',
+        start_time: eventToEdit.start_time ? new Date(eventToEdit.start_time) : null,
+        end_time: eventToEdit.end_time ? new Date(eventToEdit.end_time) : null,
+        sale_start_time: eventToEdit.sale_start_time ? new Date(eventToEdit.sale_start_time) : null, // Thêm mới
+        sale_end_time: eventToEdit.sale_end_time ? new Date(eventToEdit.sale_end_time) : null,       // Thêm mới
+        cover_image_url: eventToEdit.cover_image_url || '',
+        is_active: eventToEdit.is_active,
+      });
+      setImagePreview(eventToEdit.cover_image_url);
+    } else {
+      form.reset();
+      setCoverFile(null);
+      setImagePreview(null);
+    }
+  }, [eventToEdit, opened]);
 
   useEffect(() => {
     if (eventToEdit && opened) {
@@ -121,12 +154,14 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
         finalSlug = `${baseSlug}-${Date.now().toString().slice(-6)}`;
       }
 
-      const submissionData = {
+const submissionData = {
         ...values,
-        slug: finalSlug, // 3. Thêm slug vào dữ liệu gửi đi
+        slug: finalSlug,
         cover_image_url: finalCoverImageUrl,
         start_time: values.start_time ? new Date(values.start_time).toISOString() : null,
         end_time: values.end_time ? new Date(values.end_time).toISOString() : null,
+        sale_start_time: values.sale_start_time ? new Date(values.sale_start_time).toISOString() : null,
+        sale_end_time: values.sale_end_time ? new Date(values.sale_end_time).toISOString() : null,
       };
 
       if (isEditing) {
@@ -149,16 +184,25 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
     }
   };
 
-  return (
+ return (
     <Modal opened={opened} onClose={onClose} title={isEditing ? 'Cập nhật sự kiện' : 'Tạo sự kiện mới'} centered size="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
           <TextInput required label="Tên sự kiện" placeholder="Nhập tên sự kiện..." {...form.getInputProps('title')} />
           <Textarea label="Mô tả" placeholder="Nhập mô tả..." {...form.getInputProps('description')} />
           <TextInput label="Địa điểm" placeholder="Nhập địa điểm..." {...form.getInputProps('location')} />
-          <DateTimePicker required label="Thời gian bắt đầu" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('start_time')} />
-          <DateTimePicker required label="Thời gian kết thúc" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('end_time')} />
+          
+          <Divider label="Thời gian diễn ra" labelPosition="center" my="sm" />
+          <DateTimePicker required label="Bắt đầu" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('start_time')} />
+          <DateTimePicker required label="Kết thúc" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('end_time')} />
 
+          {/* 3. THÊM CÁC TRƯỜNG NHẬP LIỆU MỚI */}
+          <Divider label="Thời gian mở bán vé" labelPosition="center" my="sm" />
+          <DateTimePicker label="Bắt đầu bán vé" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('sale_start_time')} />
+          <DateTimePicker label="Kết thúc bán vé" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('sale_end_time')} />
+
+          <Divider my="sm" />
+          
           <Tabs defaultValue="upload">
             <Tabs.List>
               <Tabs.Tab value="upload" leftSection={<IconPhoto style={{ width: rem(16), height: rem(16) }} />}>
