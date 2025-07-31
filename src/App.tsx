@@ -1,43 +1,34 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Title, Stack, Paper, Center } from '@mantine/core';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
-import { AuthGuard } from './components/auth/AuthGuard';
-import { AdminLayout } from './layouts/AdminLayout';
-import { ArticlesPage } from './pages/admin/ArticlesPage';
 
-// import pages
+// Layouts
+import { PublicLayout } from './layouts/PublicLayout';
+import { AdminLayout } from './layouts/AdminLayout';
+
+// Guards
+import { AuthGuard } from './components/auth/AuthGuard';
+
+// Pages
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/admin/LoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { EventsPage } from './pages/admin/EventsPage';
-import { LoginPage } from './pages/admin/LoginPage';
+import { ArticlesPage } from './pages/admin/ArticlesPage';
 
-// Component giả lập cho Trang chủ
-function HomePage() {
-  return (
-    <Stack>
-      <Title order={1}>Đây là Trang Chủ</Title>
-      <div style={{ height: '150vh', background: '#f0f0f0' }}>
-        <Center h="100%">Nội dung rất dài để có thể cuộn trang...</Center>
-      </div>
-    </Stack>
-  );
-}
-
-// Component giả lập cho trang Giới thiệu
-function AboutPage() {
-  return <Title order={1}>Đây là Trang Giới Thiệu</Title>;
-}
-
-function App() {
+export function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/admin/login" element={<LoginPage />} />
+        {/* === PUBLIC ROUTES === */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          {/* <Route path="/events/:slug" element={<EventDetailPage />} /> */}
+          {/* Các trang public khác sẽ được thêm vào đây */}
+        </Route>
 
-        {/* === CẬP NHẬT CẤU TRÚC ADMIN ROUTES === */}
+        {/* === ADMIN ROUTES === */}
+        <Route path="/admin/login" element={<LoginPage />} />
         <Route element={<AuthGuard />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
@@ -49,5 +40,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

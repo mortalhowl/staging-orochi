@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
+import {App} from './App.tsx';
 
 // Import Mantine styles
 import '@mantine/core/styles.css';
@@ -8,6 +8,7 @@ import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/tiptap/styles.css';
 import 'prosemirror-view/style/prosemirror.css';
+import '@mantine/carousel/styles.css';
 
 import { MantineProvider, createTheme } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';

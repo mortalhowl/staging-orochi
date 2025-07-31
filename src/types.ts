@@ -45,5 +45,6 @@ export interface Article {
   events: {
     id: string;
     title: string;
+    slug: string;
   } | null;
 }
