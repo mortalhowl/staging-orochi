@@ -17,6 +17,7 @@ import { ArticlesPage } from './pages/admin/ArticlesPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { BankConfigPage } from './pages/admin/BankConfigPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 
 export function App() {
   return (
@@ -27,6 +28,7 @@ export function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/events/:slug" element={<EventDetailPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
 
         {/* === ADMIN ROUTES === */}

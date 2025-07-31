@@ -3,27 +3,19 @@ import { useState, useMemo, useEffect } from 'react';
 import type { EventWithDetails } from '../../types';
 import { IconPlus, IconMinus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useCartStore } from '../../store/cartStore'; // 1. Import "kho" giỏ hàng (Zustand)
-import { useNavigate } from 'react-router-dom';     // 2. Import hook điều hướng
 
 interface TicketSelectionProps {
   event: EventWithDetails;
 }
+
 const MAX_TICKETS_PER_TYPE = 10;
 
 export function TicketSelection({ event }: TicketSelectionProps) {
   const { ticket_types: ticketTypes, sale_start_time, sale_end_time } = event;
-  const navigate = useNavigate();
-  // 3. Lấy state và actions từ "kho" toàn cục
-  const { cart, totalAmount, totalTickets, setEvent, updateCart } = useCartStore();
+  const [cart, setCart] = useState<{ [key: string]: number }>({});
   
-  // State `invalidInputs` vẫn giữ lại ở local vì nó chỉ thuộc về component này
+  // State để theo dõi các input không hợp lệ
   const [invalidInputs, setInvalidInputs] = useState<{[key: string]: boolean}>({});
-
-  // 4. Khởi tạo event cho store khi component được tải
-  useEffect(() => {
-    setEvent(event);
-  }, [event, setEvent]);
 
   const isSaleOpen = useMemo(() => {
     if (!sale_start_time || !sale_end_time) {
@@ -35,45 +27,53 @@ export function TicketSelection({ event }: TicketSelectionProps) {
     return now >= startTime && now <= endTime;
   }, [sale_start_time, sale_end_time]);
 
-
   const handleQuantityChange = (ticketId: string, value: number | string) => {
-    const ticket = event.ticket_types.find(t => t.id === ticketId);
+    const ticket = ticketTypes.find(t => t.id === ticketId);
     if (!ticket) return;
 
+    // Chuyển đổi an toàn sang số nguyên
     let newQuantity = parseInt(String(value), 10);
+
+    // Xử lý giá trị không hợp lệ
     if (isNaN(newQuantity)) {
       newQuantity = 0;
     }
 
+    // Tính toán giới hạn cho loại vé này
     const remaining = ticket.quantity_total !== null ? ticket.quantity_total - ticket.quantity_sold : Infinity;
     const maxAllowed = Math.min(MAX_TICKETS_PER_TYPE, remaining);
 
-    // Vẫn cập nhật `invalidInputs` như cũ
+    // Kiểm tra nếu giá trị vượt quá giới hạn
     if (newQuantity > maxAllowed) {
       setInvalidInputs(prev => ({ ...prev, [ticketId]: true }));
     } else {
       setInvalidInputs(prev => ({ ...prev, [ticketId]: false }));
     }
-    
-    // 5. Gọi action `updateCart` của store thay vì `setCart` local
-    updateCart(ticketId, newQuantity);
+
+    // Cập nhật giỏ hàng
+    setCart((currentCart) => ({
+      ...currentCart,
+      [ticketId]: newQuantity,
+    }));
   };
 
-  // useEffect để kiểm tra và điều chỉnh giá trị vẫn hoạt động,
-  // nhưng giờ nó sẽ theo dõi `cart` từ store
+  // Sử dụng useEffect để kiểm tra và điều chỉnh giá trị sau khi cập nhật
   useEffect(() => {
+    const newCart = { ...cart };
     let hasChanges = false;
+
     Object.entries(cart).forEach(([ticketId, quantity]) => {
-      const ticket = event.ticket_types.find(t => t.id === ticketId);
+      const ticket = ticketTypes.find(t => t.id === ticketId);
       if (!ticket) return;
 
       const remaining = ticket.quantity_total !== null ? ticket.quantity_total - ticket.quantity_sold : Infinity;
       const maxAllowed = Math.min(MAX_TICKETS_PER_TYPE, remaining);
 
       if (quantity > maxAllowed) {
+        newCart[ticketId] = maxAllowed;
         hasChanges = true;
-        updateCart(ticketId, maxAllowed); // Cập nhật lại giá trị trong store
         
+        // Hiển thị cảnh báo
         notifications.show({
           title: 'Số lượng không hợp lệ',
           message: `Bạn chỉ được mua tối đa ${maxAllowed} vé cho loại ${ticket.name}`,
@@ -82,10 +82,24 @@ export function TicketSelection({ event }: TicketSelectionProps) {
         });
       }
     });
-  }, [cart, event.ticket_types, updateCart]);
 
-  // 6. Xóa các `useMemo` cho totalAmount và totalTickets vì đã có sẵn trong store
-  
+    if (hasChanges) {
+      setCart(newCart);
+    }
+  }, [cart, ticketTypes]);
+
+  const totalAmount = useMemo(() => {
+    return ticketTypes.reduce((total, ticket) => {
+      const quantity = cart[ticket.id] || 0;
+      return total + quantity * ticket.price;
+    }, 0);
+  }, [cart, ticketTypes]);
+
+  const totalTickets = useMemo(() => 
+    Object.values(cart).reduce((sum, qty) => sum + qty, 0), 
+    [cart]
+  );
+
   return (
     <Paper withBorder p="lg" radius="md" pos="sticky" top={80}>
       <Group justify="space-between">
@@ -96,8 +110,8 @@ export function TicketSelection({ event }: TicketSelectionProps) {
       </Group>
       <Divider my="sm" />
       <Stack>
-        {event.ticket_types.filter(t => t.status === 'public').map((ticket) => {
-const quantity = cart[ticket.id] || 0;
+        {ticketTypes.filter(t => t.status === 'public').map((ticket) => {
+          const quantity = cart[ticket.id] || 0;
           const remaining = ticket.quantity_total !== null ? ticket.quantity_total - ticket.quantity_sold : Infinity;
           const maxAllowed = Math.min(MAX_TICKETS_PER_TYPE, remaining);
           const isInvalid = invalidInputs[ticket.id];
@@ -160,7 +174,6 @@ const quantity = cart[ticket.id] || 0;
       </Stack>
       <Divider my="sm" />
       <Group justify="space-between">
-        {/* Lấy totalTickets và totalAmount từ store */}
         <Text>Tổng cộng ({totalTickets} vé):</Text>
         <Text fw={700} size="xl">{totalAmount.toLocaleString('vi-VN')}đ</Text>
       </Group>
@@ -170,7 +183,6 @@ const quantity = cart[ticket.id] || 0;
         size="md" 
         bg="#008a87"
         disabled={totalTickets === 0 || !isSaleOpen}
-        onClick={() => navigate('/checkout')} // 7. Thêm hành động điều hướng
       >
         Thanh toán
       </Button>
