@@ -1,5 +1,4 @@
-import { AppShell, Burger, Button, Group, Text, Menu, Avatar, rem } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image } from '@mantine/core';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
@@ -7,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { IconLogout, IconTicket, IconBrandGoogle } from '@tabler/icons-react';
 
 export function PublicLayout() {
-  const [opened, { toggle }] = useDisclosure();
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
@@ -25,7 +23,7 @@ export function PublicLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
-const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -42,15 +40,13 @@ const handleGoogleLogin = async () => {
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
-      padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Text fw={700} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              OROCHI TICKET
+          <Group >
+            <Image src='/logo.png' style={{ width: '35px' }} ></Image>
+            <Text fw={700} component={Link} to="/" style={{ textDecoration: 'none', color: '#008a87' }}>
+              OROCHI
             </Text>
           </Group>
 
@@ -81,16 +77,12 @@ const handleGoogleLogin = async () => {
             </Menu>
           ) : (
             // Nếu chưa đăng nhập, hiển thị nút Đăng nhập
-                        <Button onClick={handleGoogleLogin} leftSection={<IconBrandGoogle size={18} />} variant="default">
+            <Button onClick={handleGoogleLogin} leftSection={<IconBrandGoogle size={18} />} variant="default">
               Đăng nhập
             </Button>
           )}
         </Group>
       </AppShell.Header>
-
-      <AppShell.Navbar p="md">
-        <Link to="/">Trang chủ</Link>
-      </AppShell.Navbar>
 
       <AppShell.Main pt={60}>
         <Outlet />
