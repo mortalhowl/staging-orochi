@@ -1,11 +1,12 @@
 import { Container, Title, SimpleGrid, Card, Text, Group } from '@mantine/core';
-import { IconBuildingBank, IconBuildingStore, IconMail } from '@tabler/icons-react';
+import { IconBuildingBank, IconBuildingStore, IconMail, IconTemplate } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
 const settings = [
   { title: 'Cấu hình Ngân hàng', description: 'Tài khoản nhận tiền cho VietQR', icon: IconBuildingBank, link: '/admin/settings/bank' },
   { title: 'Thông tin Công ty', description: 'Tên, logo, địa chỉ liên hệ', icon: IconBuildingStore, link: '/admin/settings/company' },
-  { title: 'Cấu hình Email', description: 'Cài đặt SMTP để gửi mail', icon: IconMail, link: '/admin/settings/email' },
+  { title: 'Cấu hình Email', description: 'Cài đặt SMTP để gửi mail', icon: IconMail, link: '/admin/settings/email-config' },
+  { title: 'Mẫu Email', description: 'Tùy chỉnh nội dung email gửi đi', icon: IconTemplate, link: '/admin/settings/email-templates' },
 ];
 
 export function SettingsPage() {

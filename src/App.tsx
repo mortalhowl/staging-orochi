@@ -19,6 +19,8 @@ import { SettingsPage } from './pages/admin/SettingsPage';
 import { BankConfigPage } from './pages/admin/BankConfigPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { PaymentPage } from './pages/PaymentPage';
+import { EmailConfigPage } from './pages/admin/EmailConfigPage';
+import { EmailTemplatesPage } from './pages/admin/EmailTemplatesPage';
 
 export function App() {
   return (
@@ -42,6 +44,8 @@ export function App() {
             <Route path="/admin/articles" element={<ArticlesPage />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
             <Route path="/admin/settings/bank" element={<BankConfigPage />} />
+            <Route path='/admin/settings/email-config' element={<EmailConfigPage />} /> 
+            <Route path="/admin/settings/email-templates" element={<EmailTemplatesPage />} />
           </Route>
         </Route>
       </Routes>

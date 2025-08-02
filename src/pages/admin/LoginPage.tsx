@@ -61,7 +61,7 @@ export function LoginPage() {
   };
 
   return (
-    <Center h="100vh" bg="gray.1">
+    <Center h="100vh">
       <Paper radius="md" p="xl" withBorder shadow="md" w={400}>
         <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
         <Title order={2} ta="center" mb="xl">
