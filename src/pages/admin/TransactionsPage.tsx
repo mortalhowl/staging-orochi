@@ -5,6 +5,7 @@ import { supabase } from '../../services/supabaseClient';
 import { TransactionsTable } from '../../components/admin/transactions/TransactionsTable';
 import { TransactionDetailDrawer } from '../../components/admin/transactions/TransactionDetailDrawer';
 import { TransactionsToolbar } from '../../components/admin/transactions/TransactionsToolbar';
+import { TransactionsToolbarBulk } from '../../components/admin/transactions/TransactionsToolbarBulk'
 import { useDebounce } from 'use-debounce';
 import type { TransactionWithDetails } from '../../types';
 import { notifications } from '@mantine/notifications';
@@ -20,6 +21,7 @@ export function TransactionsPage() {
   const [activePage, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [stats, setStats] = useState({ total: 0, paid: 0 });
+  const [selection, setSelection] = useState<string[]>([]);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -81,6 +83,7 @@ const rpcParams = {
 
   const handleSuccess = () => {
     setRefreshKey(prev => prev + 1);
+    setSelection([]); // Xóa lựa chọn sau khi thành công
   };
 
   const handleRowClick = (transactionId: string) => {
@@ -103,10 +106,18 @@ const rpcParams = {
       
       <TransactionsToolbar filters={filters} setFilters={setFilters} />
 
-      <Paper withBorder p="md" radius="md">
+<Paper withBorder p="md" radius="md">
+        {selection.length > 0 && (
+          <TransactionsToolbarBulk
+            selection={selection}
+            onSuccess={handleSuccess}
+          />
+        )}
         <TransactionsTable
           transactions={transactions}
           loading={loading}
+          selection={selection}
+          setSelection={setSelection}
           onRowClick={handleRowClick}
         />
         <Group justify="center" mt="md">
@@ -115,7 +126,7 @@ const rpcParams = {
             value={activePage}
             onChange={(page) => {
                 setPage(page);
-                setSelectedTransactionId(null); // Reset chi tiết khi chuyển trang
+                setSelection([]); // Xóa lựa chọn khi chuyển trang
             }}
           />
         </Group>

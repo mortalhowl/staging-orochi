@@ -1,4 +1,4 @@
-import { Table, LoadingOverlay, Text, Badge, Group, ActionIcon, Tooltip } from '@mantine/core';
+import { Table, Checkbox, LoadingOverlay, Text, Badge, Group, ActionIcon, Tooltip } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { IconCopy } from '@tabler/icons-react';
 import type { TransactionWithDetails } from '../../../types';
@@ -7,6 +7,8 @@ import { formatDateTime } from '../../../utils/formatters';
 interface TransactionsTableProps {
   transactions: TransactionWithDetails[];
   loading: boolean;
+  selection: string[];
+  setSelection: (selection: string[]) => void;
   onRowClick: (transactionId: string) => void;
 }
 
@@ -17,11 +19,32 @@ const statusMapping: { [key: string]: { label: string; color: string } } = {
   expired: { label: 'Hết hạn', color: 'gray' },
 };
 
-export function TransactionsTable({ transactions, loading, onRowClick }: TransactionsTableProps) {
+export function TransactionsTable({ transactions, loading, selection, setSelection, onRowClick }: TransactionsTableProps) {
   const clipboard = useClipboard();
+  
+  // Lọc ra các ID có thể được chọn (chỉ những giao dịch pending)
+  const selectableIds = transactions.filter(t => t.status === 'pending').map(t => t.id);
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelection(checked ? selectableIds : []);
+  };
 
   const rows = transactions.map((trans) => (
     <Table.Tr key={trans.id} onClick={() => onRowClick(trans.id)} style={{ cursor: 'pointer' }}>
+      <Table.Td onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          aria-label="Select row"
+          checked={selection.includes(trans.id)}
+          disabled={trans.status !== 'pending'} // Vô hiệu hóa nếu không phải pending
+          onChange={(e) =>
+            setSelection(
+              e.currentTarget.checked
+                ? [...selection, trans.id]
+                : selection.filter((id) => id !== trans.id)
+            )
+          }
+        />
+      </Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap">
           <Text truncate maw={100}>{trans.id}</Text>
@@ -44,12 +67,20 @@ export function TransactionsTable({ transactions, loading, onRowClick }: Transac
     </Table.Tr>
   ));
 
-  return (
+ return (
     <div style={{ position: 'relative' }}>
       <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
       <Table striped highlightOnHover withTableBorder>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th style={{ width: 40 }}>
+              <Checkbox
+                aria-label="Select all rows"
+                onChange={(e) => handleSelectAll(e.currentTarget.checked)}
+                checked={selectableIds.length > 0 && selection.length === selectableIds.length}
+                indeterminate={selection.length > 0 && selection.length < selectableIds.length}
+              />
+            </Table.Th>
             <Table.Th>Mã ĐH</Table.Th>
             <Table.Th>Khách hàng</Table.Th>
             <Table.Th>Sự kiện</Table.Th>
