@@ -20,7 +20,8 @@ import {
   IconSun,
   IconMoon,
   IconSettings,
-  IconBook
+  IconBook,
+  IconShoppingCart,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -207,6 +208,21 @@ export function AdminLayout() {
             </Transition>
           }
           leftSection={<IconBook size={20} />}
+        />
+        <NavLink
+          href="/admin/transactions"
+          style={{ height: rem(40) }}
+          label={
+            <Transition
+              mounted={sidebarOpened && !isTransitioning}
+              transition="fade"
+              duration={200}
+              timingFunction="ease"
+            >
+              {(styles) => <span style={styles}>Đơn hàng</span>}
+            </Transition>
+          }
+          leftSection={<IconShoppingCart size={20} />}
         />
         <NavLink
           href="/admin/settings"

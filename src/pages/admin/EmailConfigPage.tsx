@@ -47,34 +47,31 @@ export function EmailConfigPage() {
     fetchConfig();
   }, []);
 
-  const handleSubmit = async (values: EmailConfigForm) => {
+const handleSubmit = async (values: EmailConfigForm) => {
     startLoading();
     try {
-      let error;
-      if (configId) {
-        // Cập nhật cấu hình đã có
-        ({ error } = await supabase.from('email_configs').update(values).eq('id', configId));
-      } else {
-        // Tạo cấu hình mới và lấy lại ID
-        const { data, error: insertError } = await supabase
-          .from('email_configs')
-          .insert([values])
-          .select()
-          .single();
+        const submissionData = { ...values, use_tls: true }; // LUÔN GÁN use_tls = true
+        let error;
 
-        error = insertError;
-        if (data) {
-          setConfigId(data.id);
+        if (configId) {
+            ({ error } = await supabase.from('email_configs').update(submissionData).eq('id', configId));
+        } else {
+            const { data, error: insertError } = await supabase
+                .from('email_configs')
+                .insert([submissionData]) // Gửi submissionData
+                .select()
+                .single();
+            error = insertError;
+            if (data) setConfigId(data.id);
         }
-      }
-      if (error) throw error;
-      notifications.show({ title: 'Thành công', message: 'Đã lưu cấu hình email.', color: 'green' });
+        if (error) throw error;
+        notifications.show({ title: 'Thành công', message: 'Đã lưu cấu hình email.', color: 'green' });
     } catch (err: any) {
-      notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
+        notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
     } finally {
-      endLoading();
+        endLoading();
     }
-  };
+};
 
   return (
     <Paper withBorder p="xl" radius="md" maw={600} mx="auto">
