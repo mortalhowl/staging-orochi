@@ -1,24 +1,14 @@
 import { Table, LoadingOverlay, Text, Badge, Group, ActionIcon, Tooltip } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { IconCopy } from '@tabler/icons-react';
-
-// Định nghĩa một kiểu dữ liệu tạm thời cho giao dịch sau khi JOIN
-export interface TransactionWithDetails {
-  id: string;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  users: { email: string } | null;
-  events: { title: string } | null;
-}
+import type { TransactionWithDetails } from '../../../types';
+import { formatDateTime } from '../../../utils/formatters';
 
 interface TransactionsTableProps {
   transactions: TransactionWithDetails[];
   loading: boolean;
   onRowClick: (transactionId: string) => void;
 }
-
-const formatDate = (dateString: string) => new Date(dateString).toLocaleString('vi-VN');
 
 const statusMapping: { [key: string]: { label: string; color: string } } = {
   pending: { label: 'Chờ xác nhận', color: 'yellow' },
@@ -50,7 +40,7 @@ export function TransactionsTable({ transactions, loading, onRowClick }: Transac
           {statusMapping[trans.status]?.label || trans.status}
         </Badge>
       </Table.Td>
-      <Table.Td>{formatDate(trans.created_at)}</Table.Td>
+      <Table.Td>{formatDateTime(trans.created_at)}</Table.Td>
     </Table.Tr>
   ));
 

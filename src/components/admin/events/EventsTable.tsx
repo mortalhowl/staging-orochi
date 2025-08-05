@@ -1,7 +1,7 @@
 import { Table, Checkbox, Badge, LoadingOverlay, UnstyledButton, Group, Center, rem, Text } from '@mantine/core';
 import { IconSelector, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { Event, Sorting } from '../../../types';
-import {formatDate} from '../../../utils/FormatDate'
+import {formatDate} from '../../../utils/formatters'
 
 interface EventsTableProps {
   events: Event[];

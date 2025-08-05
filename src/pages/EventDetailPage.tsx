@@ -7,7 +7,7 @@ import { Container, Loader, Center, Alert, Image, Title, Text, Grid, Stack, Divi
 import { IconAlertCircle, IconCalendar, IconMapPin, IconClock } from '@tabler/icons-react';
 import { TicketSelection } from '../components/public/TicketSelection';
 import { ArticleGrid } from '../components/public/ArticleGrid';
-import { formatDate } from '../utils/FormatDate';
+import { formatDate } from '../utils/formatters';
 
 const formatDateRange = (start: string, end: string) => {
   const startDate = new Date(start).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });

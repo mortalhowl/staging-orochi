@@ -1,4 +1,4 @@
-import { SimpleGrid, TextInput, Select } from '@mantine/core';
+import { Grid, SimpleGrid, TextInput, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconSearch } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -29,13 +29,20 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
   };
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} mb="md">
-      <TextInput
-        placeholder="Tìm Mã ĐH, Email..."
-        leftSection={<IconSearch size={16} />}
-        value={filters.search}
-        onChange={(e) => handleFilterChange('search', e.currentTarget.value)}
-      />
+<Grid gutter="md" mb="md">
+  {/* Ô tìm kiếm chiếm 6 cột trên tổng 12 => 1/2 */}
+  <Grid.Col span={{ base: 12, md: 6 }}>
+    <TextInput
+      placeholder="Tìm Mã ĐH, Email..."
+      leftSection={<IconSearch size={16} />}
+      value={filters.search}
+      onChange={(e) => handleFilterChange('search', e.currentTarget.value)}
+    />
+  </Grid.Col>
+
+  {/* Cụm còn lại chiếm 6 cột => 1/2 */}
+  <Grid.Col span={{ base: 12, md: 6 }}>
+    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
       <Select
         placeholder="Lọc theo sự kiện"
         data={events}
@@ -46,10 +53,10 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
       <Select
         placeholder="Lọc theo trạng thái"
         data={[
-            { value: 'pending', label: 'Chờ xác nhận' },
-            { value: 'paid', label: 'Đã thanh toán' },
-            { value: 'failed', label: 'Thất bại' },
-            { value: 'expired', label: 'Hết hạn' },
+          { value: 'pending', label: 'Chờ xác nhận' },
+          { value: 'paid', label: 'Đã thanh toán' },
+          { value: 'failed', label: 'Thất bại' },
+          { value: 'expired', label: 'Hết hạn' },
         ]}
         value={filters.status}
         onChange={(value) => handleFilterChange('status', value)}
@@ -63,5 +70,7 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
         clearable
       />
     </SimpleGrid>
+  </Grid.Col>
+</Grid>
   );
 }

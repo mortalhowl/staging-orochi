@@ -4,7 +4,7 @@ import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '../../../services/supabaseClient';
 import type { Event } from '../../../types';
-import {formatDate} from '../../../utils/FormatDate'
+import {formatDate} from '../../../utils/formatters'
 
 interface EventDetailsTabProps {
   event: Event;

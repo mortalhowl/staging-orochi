@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Title, Grid, Paper, Pagination, Group, Text, Badge } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Text, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TransactionsTable } from '../../components/admin/transactions/TransactionsTable';
-import type { TransactionWithDetails } from '../../components/admin/transactions/TransactionsTable';
 import { TransactionDetailDrawer } from '../../components/admin/transactions/TransactionDetailDrawer';
 import { TransactionsToolbar } from '../../components/admin/transactions/TransactionsToolbar';
 import { useDebounce } from 'use-debounce';
+import type { TransactionWithDetails } from '../../types';
+import { notifications } from '@mantine/notifications';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -28,68 +29,55 @@ export function TransactionsPage() {
   });
   const [debouncedSearch] = useDebounce(filters.search, 400);
 
-  // Hàm lấy dữ liệu chính, được gọi lại mỗi khi filter, page... thay đổi
-  const fetchTransactions = async () => {
-    setLoading(true);
-    const from = (activePage - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true);
+      const from = (activePage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase
-      .from('transactions')
-      .select('*, users(email, full_name), events(title)', { count: 'exact' });
+      // Chuẩn bị tham số để gọi RPC
+const rpcParams = {
+    search_term: debouncedSearch,
+    p_status: filters.status,
+    p_event_id: filters.eventId,
+    // Bọc trong new Date() để đảm bảo nó luôn là một đối tượng Date
+    p_start_date: filters.dateRange[0] ? new Date(filters.dateRange[0]).toISOString() : null,
+    p_end_date: filters.dateRange[1] ? (() => {
+        const endDate = new Date(filters.dateRange[1]!);
+        endDate.setHours(23, 59, 59, 999);
+        return endDate.toISOString();
+    })() : null,
+};
 
-    // Áp dụng bộ lọc tìm kiếm (hiện chỉ tìm theo Mã ĐH cho đơn giản)
-    if (debouncedSearch) {
-      // Để tìm kiếm theo email của user (bảng quan hệ), cần tạo RPC function trong Supabase.
-      // Trước mắt, chúng ta sẽ tìm theo ID giao dịch.
-      query = query.ilike('id', `%${debouncedSearch}%`);
-    }
-    // Áp dụng bộ lọc sự kiện
-    if (filters.eventId) {
-      query = query.eq('event_id', filters.eventId);
-    }
-    // Áp dụng bộ lọc trạng thái
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    // Áp dụng bộ lọc khoảng ngày
-    if (filters.dateRange[0]) {
-      query = query.gte('created_at', filters.dateRange[0].toISOString());
-    }
-    if (filters.dateRange[1]) {
-      const endDate = new Date(filters.dateRange[1]);
-      endDate.setHours(23, 59, 59, 999); // Đảm bảo lấy hết ngày
-      query = query.lte('created_at', endDate.toISOString());
-    }
+      const { data, error, count } = await supabase
+        .rpc('search_transactions', rpcParams, { count: 'exact' })
+        .select('*, users(email, full_name), events(title)')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    query = query.order('created_at', { ascending: false }).range(from, to);
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách đơn hàng.', color: 'red' });
+      } else {
+        setTransactions(data as any);
+        setTotalItems(count ?? 0);
+      }
+      setLoading(false);
+    };
 
-    const { data, error, count } = await query;
+    fetchTransactions();
+  }, [refreshKey, activePage, debouncedSearch, filters.eventId, filters.status, filters.dateRange]);
 
-    if (error) {
-      console.error('Error fetching transactions:', error);
-    } else {
-      setTransactions(data as any);
-      setTotalItems(count ?? 0);
-    }
-    setLoading(false);
-  };
-  
-  // Hàm lấy dữ liệu thống kê
   const fetchStats = async () => {
     const { count: total } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
     const { count: paid } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'paid');
     setStats({ total: total ?? 0, paid: paid ?? 0 });
   };
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [refreshKey, activePage, debouncedSearch, filters.eventId, filters.status, filters.dateRange]);
-
+  // SỬA LỖI: Gọi fetchStats
   useEffect(() => {
     fetchStats();
   }, [refreshKey]);
-
 
   const handleSuccess = () => {
     setRefreshKey(prev => prev + 1);

@@ -1,6 +1,6 @@
 import { Table, Checkbox, LoadingOverlay, Text, Tooltip, Badge } from '@mantine/core';
 import type { Article } from '../../../types';
-import { formatDate } from '../../../utils/FormatDate';
+import { formatDate } from '../../../utils/formatters';
 
 interface ArticlesTableProps {
     articles: Article[];

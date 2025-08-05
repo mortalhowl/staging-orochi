@@ -56,3 +56,17 @@ export interface Article {
     slug: string;
   } | null;
 }
+
+export interface TransactionWithDetails {
+  id: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  users: {
+    email: string;
+    full_name: string | null;
+  } | null;
+  events: {
+    title: string;
+  } | null;
+}
