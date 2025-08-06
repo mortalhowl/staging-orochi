@@ -65,48 +65,48 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
     fetchDetails();
   }, [transactionId]);
 
-  const handleConfirmPayment = () => {
-    modals.openConfirmModal({
-      title: 'Xác nhận thanh toán',
-      children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này?</Text>,
-      labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
-      confirmProps: { color: 'green' },
-      onConfirm: async () => {
-        // Bước 1: Cập nhật trạng thái giao dịch. Bước này vẫn cần await.
-        const { error: updateError } = await supabase
-          .from('transactions')
-          .update({ status: 'paid', paid_at: new Date().toISOString() })
-          .eq('id', transactionId);
+const handleConfirmPayment = () => {
+        modals.openConfirmModal({
+            title: 'Xác nhận thanh toán',
+            children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này? Vé sẽ được tạo và gửi ngay lập tức.</Text>,
+            labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
+            confirmProps: { color: 'green' },
+            onConfirm: async () => {
+                const notiId = notifications.show({
+                    loading: true,
+                    title: 'Đang xử lý...',
+                    message: 'Vui lòng chờ.',
+                    autoClose: false,
+                });
 
-        if (updateError) {
-          notifications.show({ title: 'Lỗi', message: 'Cập nhật trạng thái thất bại.', color: 'red' });
-          return; // Dừng lại nếu có lỗi
-        }
+                // Gọi đến Edge Function chuyên dụng
+                const { error: functionError } = await supabase.functions.invoke('confirm-sale-transaction', {
+                    body: { transactionId },
+                });
 
-        // Bước 2: Gọi Edge Function mà không cần "await".
-        // Hệ thống sẽ gửi yêu cầu đi và tiếp tục chạy các lệnh tiếp theo ngay lập tức.
-        supabase.functions.invoke('send-ticket-email', {
-          body: { transactionId },
-        }).then(({ error: functionError }) => {
-          // Chúng ta có thể bắt lỗi ở đây và log ra nếu muốn, nhưng không làm ảnh hưởng đến giao diện
-          if (functionError) {
-            console.error(`Failed to send email for transaction ${transactionId}:`, functionError);
-          }
+                if (functionError) {
+                    notifications.update({
+                        id: notiId,
+                        color: 'red',
+                        title: 'Thất bại',
+                        message: 'Xác nhận giao dịch thất bại. Vui lòng thử lại.',
+                        autoClose: 5000,
+                    });
+                } else {
+                    notifications.update({
+                        id: notiId,
+                        color: 'green',
+                        title: 'Thành công',
+                        message: 'Đã xác nhận thanh toán. Vé đang được gửi đi.',
+                        autoClose: 5000,
+                    });
+                    onSuccess(); // Refresh lại bảng
+                    onClose();   // Đóng Drawer
+                }
+            },
         });
-
-        // Bước 3: Hiển thị thông báo thành công cuối cùng và đóng modal/drawer.
-        notifications.show({
-          title: 'Thành công',
-          message: 'Đã xác nhận thanh toán. Vé sẽ được gửi đi trong giây lát.',
-          color: 'green'
-        });
-
-        onSuccess(); // Refresh lại bảng
-        onClose();   // Đóng Drawer
-      },
-    });
-  };
-
+    };
+    
   // 1. Hàm mới để xử lý gửi lại vé
   const handleResendTicket = async () => {
     const notiId = notifications.show({

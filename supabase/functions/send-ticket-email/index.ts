@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log(`[LOG] Invocation started at ${new Date().toISOString()}`);
-    
+
     const body = await req.json();
     const { transactionId } = body;
     console.log('[LOG] Input Data:', body);
@@ -37,10 +37,19 @@ Deno.serve(async (req) => {
     if (error) throw error;
     console.log('[LOG] Fetched transaction data successfully.');
 
-    const { data: template } = await supabaseAdmin.from('email_templates').select('*').eq('type', 'purchase_confirmation').single();
+    const templateType = transaction.type === 'invitation'
+      ? 'invitation_ticket'
+      : 'purchase_confirmation';
+
+    const { data: template } = await supabaseAdmin
+      .from('email_templates')
+      .select('*')
+      .eq('type', templateType) // Dùng biến templateType ở đây
+      .single();
+
     if (!template) throw new Error('Email template "purchase_confirmation" not found');
     console.log('[LOG] Fetched email template successfully.');
-    
+
     const { data: emailConfig } = await supabaseAdmin.from('email_configs').select('*').single();
     if (!emailConfig) throw new Error('Email config not found');
     console.log('[LOG] Fetched email config successfully.');
@@ -79,11 +88,11 @@ Deno.serve(async (req) => {
 
     // 3. Tạo tất cả vé
     console.log(`[LOG] Generating ${transaction.issued_tickets.length} tickets...`);
-    const ticketPromises = transaction.issued_tickets.map((ticket, index) => 
-        generateTicketHtml(ticket, index, transaction.issued_tickets.length)
+    const ticketPromises = transaction.issued_tickets.map((ticket, index) =>
+      generateTicketHtml(ticket, index, transaction.issued_tickets.length)
     );
     const generatedTickets = await Promise.all(ticketPromises);
-    
+
     const allTicketsHtml = generatedTickets.map(t => t.html).join('');
     const attachments = generatedTickets.map(t => t.attachment);
     console.log('[LOG] All ticket HTML and attachments generated.');
@@ -92,16 +101,16 @@ Deno.serve(async (req) => {
     let content = template.content;
     let subject = template.subject;
     const replacements = {
-        '{{ten_khach_hang}}': transaction.users.full_name,
-        '{{ten_su_kien}}': transaction.events.title,
-        '{{ma_don_hang}}': transaction.id.split('-')[0].toUpperCase(),
-        '{{tong_tien}}': transaction.total_amount.toLocaleString('vi-VN') + 'đ',
-        '{{danh_sach_ve}}': allTicketsHtml,
+      '{{ten_khach_hang}}': transaction.users.full_name,
+      '{{ten_su_kien}}': transaction.events.title,
+      '{{ma_don_hang}}': transaction.id.split('-')[0].toUpperCase(),
+      '{{tong_tien}}': transaction.total_amount.toLocaleString('vi-VN') + 'đ',
+      '{{danh_sach_ve}}': allTicketsHtml,
     };
 
     for (const [key, value] of Object.entries(replacements)) {
-        content = content.replaceAll(key, value || '');
-        subject = subject.replaceAll(key, value || '');
+      content = content.replaceAll(key, value || '');
+      subject = subject.replaceAll(key, value || '');
     }
     console.log('[LOG] Placeholders replaced. Final subject:', subject);
 
@@ -132,13 +141,13 @@ Deno.serve(async (req) => {
     console.log('[LOG] Email sent successfully! Message ID:', info.messageId);
 
     await transporter.close();
-    
+
     const responseBody = JSON.stringify({ success: true, messageId: info.messageId });
     return new Response(responseBody, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-    
+
   } catch (error) {
     console.error('--- ERROR IN FUNCTION ---', error);
     const errorBody = JSON.stringify({ error: error.message });

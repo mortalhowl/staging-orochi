@@ -22,6 +22,7 @@ import { PaymentPage } from './pages/PaymentPage';
 import { EmailConfigPage } from './pages/admin/EmailConfigPage';
 import { EmailTemplatesPage } from './pages/admin/EmailTemplatesPage';
 import { TransactionsPage } from './pages/admin/TransactionsPage';
+import { InvitedTicketsPage } from './pages/admin/InvitedTicketsPage';
 
 export function App() {
   return (
@@ -48,6 +49,7 @@ export function App() {
             <Route path='/admin/settings/email-config' element={<EmailConfigPage />} /> 
             <Route path="/admin/settings/email-templates" element={<EmailTemplatesPage />} />
             <Route path="/admin/transactions" element={<TransactionsPage />} />
+            <Route path="/admin/invited-tickets" element={<InvitedTicketsPage />} />
           </Route>
         </Route>
       </Routes>
