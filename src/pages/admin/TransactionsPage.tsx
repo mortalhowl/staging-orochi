@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Paper, Pagination, Group, Text, Badge } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Text, Badge, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TransactionsTable } from '../../components/admin/transactions/TransactionsTable';
@@ -9,6 +9,8 @@ import { TransactionsToolbarBulk } from '../../components/admin/transactions/Tra
 import { useDebounce } from 'use-debounce';
 import type { TransactionWithDetails } from '../../types';
 import { notifications } from '@mantine/notifications';
+import { IconDownload } from '@tabler/icons-react';
+import * as XLSX from 'xlsx';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -22,6 +24,7 @@ export function TransactionsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [stats, setStats] = useState({ total: 0, paid: 0 });
   const [selection, setSelection] = useState<string[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -91,9 +94,90 @@ export function TransactionsPage() {
     openDrawer();
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    notifications.show({ id: 'export-start', loading: true, title: 'Đang xuất dữ liệu', message: 'Vui lòng chờ...', autoClose: false });
+
+    try {
+      // Lấy TẤT CẢ dữ liệu khớp với bộ lọc hiện tại, không phân trang
+      let query = supabase
+        .from('transactions')
+        .select('*, users(full_name, email), events(title), transaction_items(*, ticket_types(name, price))');
+
+      // Áp dụng lại các bộ lọc tương tự như fetchTransactions
+      if (debouncedSearch) {
+        query = query.or(`users.email.ilike.%${debouncedSearch}%,id.ilike.%${debouncedSearch}%`);
+      }
+      if (filters.eventId) query = query.eq('event_id', filters.eventId);
+      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.dateRange[0]) query = query.gte('created_at', new Date(filters.dateRange[0]).toISOString());
+      if (filters.dateRange[1]) {
+        const endDate = new Date(filters.dateRange[1]);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', endDate.toISOString());
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        notifications.update({ id: 'export-start', color: 'yellow', title: 'Không có dữ liệu', message: 'Không tìm thấy giao dịch nào để xuất.', autoClose: 3000 });
+        setExporting(false);
+        return;
+      }
+
+      // 3. Xử lý và làm phẳng dữ liệu
+      const flattenedData = data.reduce((acc: any[], transaction: any) => {
+        transaction.transaction_items.forEach((item: any) => {
+          acc.push({
+            'STT': acc.length + 1, // dựa trên độ dài hiện có
+            'Mã GD': transaction.id || '',
+            'Tên khách hàng': transaction.users?.full_name || '',
+            'Email': transaction.users?.email || '',
+            'Sự kiện': transaction.events?.title || '',
+            'Loại vé đã đặt': item.ticket_types?.name || '',
+            'Số lượng': item.quantity,
+            'Giá vé': item.price,
+            'Thành tiền': item.quantity * item.price,
+            'Thời gian mua': new Date(transaction.created_at).toLocaleString('vi-VN'),
+            'Thời gian xác nhận': transaction.paid_at
+              ? new Date(transaction.paid_at).toLocaleString('vi-VN')
+              : 'Chưa xác nhận',
+          });
+        });
+        return acc;
+      }, []);
+
+
+      // const totalItemQuantity = flattenedData.reduce((sum, row) => sum + row['Số lượng'], 0);
+      const totalAmount = flattenedData.reduce((sum, row) => sum + row['Thành tiền'], 0);
+
+      // 4. Tạo file Excel
+      const worksheet = XLSX.utils.json_to_sheet(flattenedData);
+      // Thêm hàng tổng cộng
+      XLSX.utils.sheet_add_aoa(worksheet, [['', 'TỔNG CỘNG', '', '', '', '', '', '', totalAmount]], { origin: -1 });
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'GiaoDich');
+      XLSX.writeFile(workbook, `GiaoDich_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      notifications.update({ id: 'export-start', color: 'green', title: 'Thành công', message: `Đã xuất ${data.length} giao dịch.`, autoClose: 3000 });
+    } catch (err: any) {
+      notifications.update({ id: 'export-start', color: 'red', title: 'Thất bại', message: 'Xuất dữ liệu thất bại.', autoClose: 3000 });
+      console.error(err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
-      <Title order={2} mb="xl">Quản lý Đơn hàng</Title>
+      <Group justify="space-between" mb="xl">
+        <Title order={2}>Quản lý Đơn hàng</Title>
+        <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16} />}>
+          Xuất Excel
+        </Button>
+      </Group>
 
       <Paper withBorder p="md" radius="md" mb="md">
         <Group>

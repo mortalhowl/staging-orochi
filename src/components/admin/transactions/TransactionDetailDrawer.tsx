@@ -107,6 +107,40 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
     });
   };
 
+  // 1. Hàm mới để xử lý gửi lại vé
+  const handleResendTicket = async () => {
+    const notiId = notifications.show({
+      loading: true,
+      title: 'Đang gửi lại vé...',
+      message: 'Vui lòng chờ.',
+      autoClose: false,
+    });
+
+    try {
+      const { error: functionError } = await supabase.functions.invoke('resend-ticket', {
+        body: { transactionId },
+      });
+      if (functionError) throw functionError;
+
+      notifications.update({
+        id: notiId,
+        color: 'green',
+        title: 'Thành công',
+        message: 'Đã gửi lại vé thành công cho khách hàng.',
+        autoClose: 5000,
+      });
+    } catch (err: any) {
+      notifications.update({
+        id: notiId,
+        color: 'red',
+        title: 'Thất bại',
+        message: 'Gửi lại vé thất bại. Vui lòng thử lại sau.',
+        autoClose: 5000,
+      });
+    }
+  };
+
+
   return (
     <Drawer opened={opened} onClose={onClose} title="Chi tiết Đơn hàng" position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>
@@ -144,6 +178,11 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
             {transaction.status === 'pending' && (
               <Button color="green" onClick={handleConfirmPayment}>
                 Xác nhận đã thanh toán
+              </Button>
+            )}
+            {transaction.status === 'paid' && (
+              <Button variant="light" onClick={handleResendTicket}>
+                Gửi lại vé
               </Button>
             )}
           </Stack>
