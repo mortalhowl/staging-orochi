@@ -18,15 +18,15 @@ export function TransactionsToolbarBulk({ selection, onSuccess }: TransactionsTo
       labels: { confirm: 'Xác nhận', cancel: 'Hủy' },
       confirmProps: { color: 'green' },
       onConfirm: async () => {
-        const notiId = notifications.show({ loading: true, title: 'Đang xử lý...', message: 'Vui lòng chờ.', autoClose: false });
         const { error } = await supabase.functions.invoke('confirm-transactions-bulk', {
           body: { transactionIds: selection },
         });
 
         if (error) {
-          notifications.update({ id: notiId, color: 'red', title: 'Thất bại', message: error.message });
+          notifications.show({ color: 'red', title: 'Thất bại', message: "Gửi yêu cầu xác nhận hàng loạt thất bại." });
         } else {
-          notifications.update({ id: notiId, color: 'green', title: 'Thành công', message: `Đã gửi yêu cầu xác nhận cho ${selection.length} giao dịch.` });
+          // Thông báo cho admin biết yêu cầu đã được gửi đi và đang xử lý ngầm
+          notifications.show({ color: 'green', title: 'Đã gửi yêu cầu', message: `Hệ thống đang xử lý xác nhận và gửi vé cho ${selection.length} giao dịch.` });
           onSuccess();
         }
       },

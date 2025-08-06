@@ -65,62 +65,48 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
     fetchDetails();
   }, [transactionId]);
 
-const handleConfirmPayment = () => {
-        modals.openConfirmModal({
-            title: 'Xác nhận thanh toán',
-            children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này?</Text>,
-            labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
-            confirmProps: { color: 'green' },
-            onConfirm: async () => {
-                // Bước 1: Cập nhật trạng thái giao dịch
-                const { error: updateError } = await supabase
-                    .from('transactions')
-                    .update({ status: 'paid', paid_at: new Date().toISOString() })
-                    .eq('id', transactionId);
+  const handleConfirmPayment = () => {
+    modals.openConfirmModal({
+      title: 'Xác nhận thanh toán',
+      children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này?</Text>,
+      labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
+      confirmProps: { color: 'green' },
+      onConfirm: async () => {
+        // Bước 1: Cập nhật trạng thái giao dịch. Bước này vẫn cần await.
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({ status: 'paid', paid_at: new Date().toISOString() })
+          .eq('id', transactionId);
 
-                if (updateError) {
-                    notifications.show({ title: 'Lỗi', message: 'Cập nhật trạng thái thất bại.', color: 'red' });
-                    return;
-                }
+        if (updateError) {
+          notifications.show({ title: 'Lỗi', message: 'Cập nhật trạng thái thất bại.', color: 'red' });
+          return; // Dừng lại nếu có lỗi
+        }
 
-                // Cập nhật thành công, hiển thị thông báo chờ
-                const notiId = notifications.show({
-                    loading: true,
-                    title: 'Đang gửi vé...',
-                    message: 'Đã xác nhận thanh toán, hệ thống đang gửi vé cho khách hàng.',
-                    autoClose: false,
-                    withCloseButton: false,
-                });
-
-                // Bước 2: Gọi trực tiếp Edge Function từ frontend
-                try {
-                    const { error: functionError } = await supabase.functions.invoke('send-ticket-email', {
-                        body: { transactionId },
-                    });
-                    if (functionError) throw functionError;
-
-                    notifications.update({
-                        id: notiId,
-                        color: 'green',
-                        title: 'Thành công',
-                        message: 'Đã gửi vé thành công cho khách hàng.',
-                        autoClose: 5000,
-                    });
-                } catch (err: any) {
-                    notifications.update({
-                        id: notiId,
-                        color: 'red',
-                        title: 'Lỗi gửi mail',
-                        message: 'Xác nhận thành công nhưng gửi vé thất bại. Vui lòng thử gửi lại.',
-                        autoClose: 5000,
-                    });
-                }
-                
-                onSuccess(); // Refresh lại bảng
-                onClose();   // Đóng Drawer
-            },
+        // Bước 2: Gọi Edge Function mà không cần "await".
+        // Hệ thống sẽ gửi yêu cầu đi và tiếp tục chạy các lệnh tiếp theo ngay lập tức.
+        supabase.functions.invoke('send-ticket-email', {
+          body: { transactionId },
+        }).then(({ error: functionError }) => {
+          // Chúng ta có thể bắt lỗi ở đây và log ra nếu muốn, nhưng không làm ảnh hưởng đến giao diện
+          if (functionError) {
+            console.error(`Failed to send email for transaction ${transactionId}:`, functionError);
+          }
         });
-    };
+
+        // Bước 3: Hiển thị thông báo thành công cuối cùng và đóng modal/drawer.
+        notifications.show({
+          title: 'Thành công',
+          message: 'Đã xác nhận thanh toán. Vé sẽ được gửi đi trong giây lát.',
+          color: 'green'
+        });
+
+        onSuccess(); // Refresh lại bảng
+        onClose();   // Đóng Drawer
+      },
+    });
+  };
+
   return (
     <Drawer opened={opened} onClose={onClose} title="Chi tiết Đơn hàng" position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>

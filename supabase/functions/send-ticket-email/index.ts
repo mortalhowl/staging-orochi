@@ -27,11 +27,11 @@ Deno.serve(async (req) => {
     );
     console.log('[LOG] Supabase admin client created.');
 
-    // 1. Lấy tất cả dữ liệu cần thiết, bao gồm ID của các vé đã được phát hành
+    // 1. Lấy dữ liệu, JOIN trực tiếp ticket_types từ issued_tickets
     console.log('[LOG] Fetching all necessary data...');
     const { data: transaction, error } = await supabaseAdmin
       .from('transactions')
-      .select('*, users(*), events(*), transaction_items(*, ticket_types(*)), issued_tickets(id)')
+      .select('*, users(*), events(*), issued_tickets(id, ticket_types(name))')
       .eq('id', transactionId)
       .single();
     if (error) throw error;
@@ -46,19 +46,12 @@ Deno.serve(async (req) => {
     console.log('[LOG] Fetched email config successfully.');
 
     // 2. Hàm để tạo HTML và file đính kèm cho từng vé
-    const generateTicketHtml = async (issuedTicket: { id: string }, index: number, total: number) => {
-      // Tạo mã QR dưới dạng base64
+    const generateTicketHtml = async (issuedTicket: any, index: number, total: number) => {
       const qrCodeDataURL = await qrcode.toDataURL(issuedTicket.id);
-      const cid = `qr_${issuedTicket.id}`; // Content-ID duy nhất cho mỗi ảnh QR
+      const cid = `qr_${issuedTicket.id}`;
+      const ticketTypeName = issuedTicket.ticket_types?.name || 'Không xác định';
 
-      // Tìm tên loại vé tương ứng (đây là một logic phức tạp hơn một chút)
-      // Giả định rằng thứ tự vé được phát hành tương ứng với thứ tự các mục trong transaction_items
-      // Một cách tiếp cận tốt hơn nếu cần là lưu ticket_type_id vào issued_tickets
-      const ticketItem = transaction.transaction_items[index] || transaction.transaction_items[0];
-      const ticketTypeName = ticketItem?.ticket_types?.name || 'Vé tiêu chuẩn';
-      
       const html = `
-        <div style="max-width: 600px; margin: 0 auto 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: Arial, sans-serif;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
             <tr>
               <td style="padding: 0; vertical-align: top; width: 65%;">
@@ -79,10 +72,8 @@ Deno.serve(async (req) => {
                 <p style="font-size: 8px; color: #555; margin-top: 5px;">Quét mã này tại cổng</p>
               </td>
             </tr>
-          </table>
-        </div>`;
+          </table>`;
 
-      // Trả về cả HTML và object attachment cho Nodemailer
       return { html, attachment: { path: qrCodeDataURL, cid } };
     };
 
@@ -105,15 +96,19 @@ Deno.serve(async (req) => {
         '{{ten_su_kien}}': transaction.events.title,
         '{{ma_don_hang}}': transaction.id.split('-')[0].toUpperCase(),
         '{{tong_tien}}': transaction.total_amount.toLocaleString('vi-VN') + 'đ',
-        '{{danh_sach_ve}}': allTicketsHtml, // Thay thế bằng chuỗi HTML của tất cả vé
+        '{{danh_sach_ve}}': allTicketsHtml,
     };
 
     for (const [key, value] of Object.entries(replacements)) {
         content = content.replaceAll(key, value || '');
         subject = subject.replaceAll(key, value || '');
     }
-    
-    // 5. Gửi email
+    console.log('[LOG] Placeholders replaced. Final subject:', subject);
+
+    // 5. Bọc toàn bộ nội dung email vào div chung
+    const finalHtml = `<div style="max-width: 600px; margin: 0 auto; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: Arial, sans-serif;">${content}</div>`;
+
+    // 6. Gửi email bằng Nodemailer
     const transporter = nodemailer.createTransport({
       host: emailConfig.smtp_host,
       port: emailConfig.smtp_port,
@@ -128,8 +123,8 @@ Deno.serve(async (req) => {
       from: `"${transaction.events.title}" <${emailConfig.sender_email}>`,
       to: transaction.users.email,
       subject: subject,
-      html: content,
-      attachments: attachments, // Thêm attachments vào đây để nhúng ảnh QR
+      html: finalHtml,
+      attachments: attachments, // Nhúng ảnh QR
     };
 
     console.log('[LOG] Sending email to:', mailOptions.to);

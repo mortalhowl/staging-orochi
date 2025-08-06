@@ -1,4 +1,4 @@
-import { Table, Checkbox, LoadingOverlay, Text, Badge, Group, ActionIcon, Tooltip } from '@mantine/core';
+import { Table, Checkbox, LoadingOverlay, Text, Badge, Group, ActionIcon, Tooltip, Avatar, Box } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { IconCopy } from '@tabler/icons-react';
 import type { TransactionWithDetails } from '../../../types';
@@ -21,7 +21,7 @@ const statusMapping: { [key: string]: { label: string; color: string } } = {
 
 export function TransactionsTable({ transactions, loading, selection, setSelection, onRowClick }: TransactionsTableProps) {
   const clipboard = useClipboard();
-  
+
   // Lọc ra các ID có thể được chọn (chỉ những giao dịch pending)
   const selectableIds = transactions.filter(t => t.status === 'pending').map(t => t.id);
 
@@ -47,7 +47,7 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
       </Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap">
-          <Text truncate maw={100}>{trans.id}</Text>
+          <Text truncate maw={200}>{trans.id}</Text>
           <Tooltip label="Sao chép Mã ĐH">
             <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(trans.id); }}>
               <IconCopy size={14} />
@@ -55,7 +55,28 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
           </Tooltip>
         </Group>
       </Table.Td>
-      <Table.Td>{trans.users?.email || 'N/A'}</Table.Td>
+      {/* <Table.Td>{trans.users?.email || 'N/A'}</Table.Td> */}
+      <Table.Td>
+        <Group align="center">
+          <Group>
+            <Avatar radius="xl" />
+            <Box w={150}>
+              <Text truncate maw={150} size="sm" fw={500}>{trans.users?.full_name}</Text>
+              <Text truncate maw={150} size="xs" c="dimmed">{trans.users?.email}</Text>
+            </Box>
+          </Group>
+
+          <Tooltip label="Sao chép Email">
+            <ActionIcon variant="transparent" color="gray" onClick={(e) => {
+              e.stopPropagation();
+              clipboard.copy(trans.users?.email);
+            }}>
+              <IconCopy size={14} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+
+      </Table.Td>
       <Table.Td>{trans.events?.title || 'N/A'}</Table.Td>
       <Table.Td>{trans.total_amount.toLocaleString('vi-VN')}đ</Table.Td>
       <Table.Td>
@@ -67,7 +88,7 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
     </Table.Tr>
   ));
 
- return (
+  return (
     <div style={{ position: 'relative' }}>
       <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
       <Table striped highlightOnHover withTableBorder>

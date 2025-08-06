@@ -38,18 +38,18 @@ export function TransactionsPage() {
       const to = from + ITEMS_PER_PAGE - 1;
 
       // Chuẩn bị tham số để gọi RPC
-const rpcParams = {
-    search_term: debouncedSearch,
-    p_status: filters.status,
-    p_event_id: filters.eventId,
-    // Bọc trong new Date() để đảm bảo nó luôn là một đối tượng Date
-    p_start_date: filters.dateRange[0] ? new Date(filters.dateRange[0]).toISOString() : null,
-    p_end_date: filters.dateRange[1] ? (() => {
-        const endDate = new Date(filters.dateRange[1]!);
-        endDate.setHours(23, 59, 59, 999);
-        return endDate.toISOString();
-    })() : null,
-};
+      const rpcParams = {
+        search_term: debouncedSearch,
+        p_status: filters.status,
+        p_event_id: filters.eventId,
+        // Bọc trong new Date() để đảm bảo nó luôn là một đối tượng Date
+        p_start_date: filters.dateRange[0] ? new Date(filters.dateRange[0]).toISOString() : null,
+        p_end_date: filters.dateRange[1] ? (() => {
+          const endDate = new Date(filters.dateRange[1]!);
+          endDate.setHours(23, 59, 59, 999);
+          return endDate.toISOString();
+        })() : null,
+      };
 
       const { data, error, count } = await supabase
         .rpc('search_transactions', rpcParams, { count: 'exact' })
@@ -90,11 +90,11 @@ const rpcParams = {
     setSelectedTransactionId(transactionId);
     openDrawer();
   };
-  
+
   return (
     <>
       <Title order={2} mb="xl">Quản lý Đơn hàng</Title>
-      
+
       <Paper withBorder p="md" radius="md" mb="md">
         <Group>
           <Text fw={500}>Tổng quan:</Text>
@@ -103,10 +103,10 @@ const rpcParams = {
           <Badge size="lg" color="yellow">{stats.total - stats.paid} Chờ xử lý</Badge>
         </Group>
       </Paper>
-      
+
       <TransactionsToolbar filters={filters} setFilters={setFilters} />
 
-<Paper withBorder p="md" radius="md">
+      <Paper withBorder p="md" radius="md">
         {selection.length > 0 && (
           <TransactionsToolbarBulk
             selection={selection}
@@ -125,14 +125,14 @@ const rpcParams = {
             total={Math.ceil(totalItems / ITEMS_PER_PAGE)}
             value={activePage}
             onChange={(page) => {
-                setPage(page);
-                setSelection([]); // Xóa lựa chọn khi chuyển trang
+              setPage(page);
+              setSelection([]); // Xóa lựa chọn khi chuyển trang
             }}
           />
         </Group>
       </Paper>
 
-      <TransactionDetailDrawer 
+      <TransactionDetailDrawer
         transactionId={selectedTransactionId}
         opened={drawerOpened}
         onClose={closeDrawer}
