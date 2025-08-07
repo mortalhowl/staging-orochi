@@ -8,7 +8,8 @@ import { EventFormModal } from '../../components/admin/events/EventFormModal';
 import { EventDetailDrawer } from '../../components/admin/events/EventDetailDrawer';
 import { EventsToolbar } from '../../components/admin/events/EventsToolbar';
 import type { Event, Sorting } from '../../types';
-import { useDebounce  } from 'use-debounce';
+import { useDebounce } from 'use-debounce';
+import { notifications } from '@mantine/notifications';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,51 +27,47 @@ export function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>('all');
   const [sorting, setSorting] = useState<Sorting>({ column: 'created_at', direction: 'desc' });
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 400);
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching events:', error);
-    } else {
-      setEvents(data as Event[]);
-      setRefreshKey((prevKey) => prevKey + 1); // 2. Thay đổi key mỗi khi fetch thành công
-    }
-    setLoading(false);
-  };
-
-useEffect(() => {
+  useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
-      setSelection([]); // Reset lựa chọn khi filter thay đổi
+      setSelection([]);
 
       const from = (activePage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      let query = supabase.from('events').select('*', { count: 'exact' });
+      // 1. Query để lấy dữ liệu trang hiện tại (bỏ { count: 'exact' })
+      let dataQuery = supabase
+        .from('events')
+        .select('*')
+        .order(sorting.column, { ascending: sorting.direction === 'asc' })
+        .range(from, to);
 
       if (debouncedSearchTerm) {
-        query = query.ilike('title', `%${debouncedSearchTerm}%`);
+        dataQuery = dataQuery.ilike('title', `%${debouncedSearchTerm}%`);
       }
       if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('is_active', statusFilter === 'active');
+        dataQuery = dataQuery.eq('is_active', statusFilter === 'active');
       }
       
-      query = query.order(sorting.column, { ascending: sorting.direction === 'asc' });
-      query = query.range(from, to);
+      // 2. Query để đếm tổng số lượng bằng RPC
+      const countParams = {
+        search_term: debouncedSearchTerm,
+        p_is_active: statusFilter === null || statusFilter === 'all' ? null : statusFilter === 'active',
+      };
+      const countPromise = supabase.rpc('count_events', countParams);
 
-      const { data, error, count } = await query;
+      // 3. Chạy cả hai query song song
+      const [dataRes, countRes] = await Promise.all([dataQuery, countPromise]);
 
-      if (error) {
-        console.error('Error fetching events:', error);
+      if (dataRes.error || countRes.error) {
+        notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách sự kiện.', color: 'red' });
+        console.error(dataRes.error || countRes.error);
       } else {
-        setEvents(data as Event[]);
-        setTotalItems(count ?? 0);
+        setEvents(dataRes.data as Event[]);
+        // 4. Lấy tổng số lượng từ kết quả của RPC
+        setTotalItems(countRes.data ?? 0);
       }
       setLoading(false);
     };
@@ -78,26 +75,11 @@ useEffect(() => {
     fetchEvents();
   }, [activePage, debouncedSearchTerm, statusFilter, sorting, refreshKey]);
 
-  const handleRowClick = (eventId: string) => {
-    setSelectedEventId(eventId);
-    openDrawer();
-  };
-
-  const handleAddNew = () => {
-    setEventToEdit(null);
-    openModal();
-  };
-
-  const handleEdit = (event: Event) => {
-    setEventToEdit(event);
-    closeDrawer();
-    openModal();
-  };
-  
-  const handleCloseModal = () => {
-    closeModal();
-    setEventToEdit(null);
-  }
+  const handleSuccess = () => setRefreshKey(prev => prev + 1);
+  const handleRowClick = (eventId: string) => { setSelectedEventId(eventId); openDrawer(); };
+  const handleAddNew = () => { setEventToEdit(null); openModal(); };
+  const handleEdit = (event: Event) => { setEventToEdit(event); closeDrawer(); openModal(); };
+  const handleCloseModal = () => { closeModal(); setEventToEdit(null); };
 
   return (
     <>
@@ -126,15 +108,13 @@ useEffect(() => {
             value={statusFilter}
             onChange={setStatusFilter}
             clearable
-            style={{maxWidth: '200px'}}
-
           />
         </SimpleGrid>
 
         {selection.length > 0 && (
           <EventsToolbar
             selection={selection}
-            onSuccess={fetchEvents}
+            onSuccess={handleSuccess}
             clearSelection={() => setSelection([])}
           />
         )}
@@ -149,11 +129,12 @@ useEffect(() => {
           setSorting={setSorting}
         />
 
-        <Group justify="right" mt="md">
+        <Group justify="center" mt="md">
           <Pagination
             total={Math.ceil(totalItems / ITEMS_PER_PAGE)}
             value={activePage}
             onChange={setPage}
+            withEdges
           />
         </Group>
       </Paper>
@@ -161,7 +142,7 @@ useEffect(() => {
       <EventFormModal
         opened={modalOpened}
         onClose={handleCloseModal}
-        onSuccess={fetchEvents} // fetchEvents sẽ tự động cập nhật refreshKey
+        onSuccess={handleSuccess}
         eventToEdit={eventToEdit}
       />
 
@@ -169,9 +150,9 @@ useEffect(() => {
         eventId={selectedEventId}
         opened={drawerOpened}
         onClose={closeDrawer}
-        onSuccess={fetchEvents} // fetchEvents sẽ tự động cập nhật refreshKey
+        onSuccess={handleSuccess}
         onEdit={handleEdit}
-        refreshKey={refreshKey} // 3. Truyền key xuống cho Drawer
+        refreshKey={refreshKey}
       />
     </>
   );

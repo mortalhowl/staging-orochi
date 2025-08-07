@@ -22,7 +22,8 @@ import {
   IconSettings,
   IconBook,
   IconShoppingCart,
-  IconGift,   
+  IconGift,
+  IconTicketOff,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -235,10 +236,25 @@ export function AdminLayout() {
               duration={200}
               timingFunction="ease"
             >
-              {(styles) => <span style={styles}>Đơn hàng</span>}
+              {(styles) => <span style={styles}>Vé mời</span>}
             </Transition>
           }
           leftSection={<IconGift size={20} />}
+        />
+                <NavLink
+          href="/admin/tickets"
+          style={{ height: rem(40) }}
+          label={
+            <Transition
+              mounted={sidebarOpened && !isTransitioning}
+              transition="fade"
+              duration={200}
+              timingFunction="ease"
+            >
+              {(styles) => <span style={styles}>Danh sách vé</span>}
+            </Transition>
+          }
+          leftSection={<IconTicketOff size={20} />}
         />
         <NavLink
           href="/admin/settings"

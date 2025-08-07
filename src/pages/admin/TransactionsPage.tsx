@@ -5,7 +5,7 @@ import { supabase } from '../../services/supabaseClient';
 import { TransactionsTable } from '../../components/admin/transactions/TransactionsTable';
 import { TransactionDetailDrawer } from '../../components/admin/transactions/TransactionDetailDrawer';
 import { TransactionsToolbar } from '../../components/admin/transactions/TransactionsToolbar';
-import { TransactionsToolbarBulk } from '../../components/admin/transactions/TransactionsToolbarBulk'
+import { TransactionsToolbarBulk } from '../../components/admin/transactions/TransactionsToolbarBulk';
 import { useDebounce } from 'use-debounce';
 import type { TransactionWithDetails } from '../../types';
 import { notifications } from '@mantine/notifications';
@@ -37,15 +37,14 @@ export function TransactionsPage() {
   useEffect(() => {
     const fetchTransactions = async () => {
       setLoading(true);
+      setSelection([]);
       const from = (activePage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      // Chuẩn bị tham số để gọi RPC
       const rpcParams = {
         search_term: debouncedSearch,
         p_status: filters.status,
         p_event_id: filters.eventId,
-        // Bọc trong new Date() để đảm bảo nó luôn là một đối tượng Date
         p_start_date: filters.dateRange[0] ? new Date(filters.dateRange[0]).toISOString() : null,
         p_end_date: filters.dateRange[1] ? (() => {
           const endDate = new Date(filters.dateRange[1]!);
@@ -54,18 +53,25 @@ export function TransactionsPage() {
         })() : null,
       };
 
-      const { data, error, count } = await supabase
-        .rpc('search_transactions', rpcParams, { count: 'exact' })
+      // 1. Query để lấy dữ liệu trang hiện tại
+      const dataPromise = supabase
+        .rpc('search_transactions', rpcParams)
         .select('*, users(email, full_name), events(title)')
         .order('created_at', { ascending: false })
         .range(from, to);
+      
+      // 2. Query để đếm tổng số lượng
+      const countPromise = supabase.rpc('count_transactions', rpcParams);
 
-      if (error) {
-        console.error('Error fetching transactions:', error);
+      const [dataRes, countRes] = await Promise.all([dataPromise, countPromise]);
+
+      if (dataRes.error || countRes.error) {
+        console.error('Error fetching transactions:', dataRes.error || countRes.error);
         notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách đơn hàng.', color: 'red' });
       } else {
-        setTransactions(data as any);
-        setTotalItems(count ?? 0);
+        setTransactions(dataRes.data as any);
+        // 3. Lấy tổng số lượng từ kết quả của RPC đếm
+        setTotalItems(countRes.data ?? 0);
       }
       setLoading(false);
     };
@@ -79,14 +85,12 @@ export function TransactionsPage() {
     setStats({ total: total ?? 0, paid: paid ?? 0 });
   };
 
-  // SỬA LỖI: Gọi fetchStats
   useEffect(() => {
     fetchStats();
   }, [refreshKey]);
 
   const handleSuccess = () => {
     setRefreshKey(prev => prev + 1);
-    setSelection([]); // Xóa lựa chọn sau khi thành công
   };
 
   const handleRowClick = (transactionId: string) => {
@@ -99,25 +103,23 @@ export function TransactionsPage() {
     notifications.show({ id: 'export-start', loading: true, title: 'Đang xuất dữ liệu', message: 'Vui lòng chờ...', autoClose: false });
 
     try {
-      // Lấy TẤT CẢ dữ liệu khớp với bộ lọc hiện tại, không phân trang
-      let query = supabase
-        .from('transactions')
-        .select('*, users(full_name, email), events(title), transaction_items(*, ticket_types(name, price))');
-
-      // Áp dụng lại các bộ lọc tương tự như fetchTransactions
-      if (debouncedSearch) {
-        query = query.or(`users.email.ilike.%${debouncedSearch}%,id.ilike.%${debouncedSearch}%`);
-      }
-      if (filters.eventId) query = query.eq('event_id', filters.eventId);
-      if (filters.status) query = query.eq('status', filters.status);
-      if (filters.dateRange[0]) query = query.gte('created_at', new Date(filters.dateRange[0]).toISOString());
-      if (filters.dateRange[1]) {
-        const endDate = new Date(filters.dateRange[1]);
-        endDate.setHours(23, 59, 59, 999);
-        query = query.lte('created_at', endDate.toISOString());
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
+      // Logic xuất Excel giờ đây cũng nên dùng RPC để đảm bảo dữ liệu nhất quán
+      const rpcParams = {
+        search_term: debouncedSearch,
+        p_status: filters.status,
+        p_event_id: filters.eventId,
+        p_start_date: filters.dateRange[0] ? new Date(filters.dateRange[0]).toISOString() : null,
+        p_end_date: filters.dateRange[1] ? (() => {
+            const endDate = new Date(filters.dateRange[1]!);
+            endDate.setHours(23, 59, 59, 999);
+            return endDate.toISOString();
+        })() : null,
+      };
+      
+      const { data, error } = await supabase
+        .rpc('search_transactions', rpcParams)
+        .select('*, users(full_name, email), events(title), transaction_items(*, ticket_types(name, price))')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (!data || data.length === 0) {
@@ -126,37 +128,26 @@ export function TransactionsPage() {
         return;
       }
 
-      // 3. Xử lý và làm phẳng dữ liệu
-      const flattenedData = data.reduce((acc: any[], transaction: any) => {
-        transaction.transaction_items.forEach((item: any) => {
-          acc.push({
-            'STT': acc.length + 1, // dựa trên độ dài hiện có
-            'Mã GD': transaction.id || '',
-            'Tên khách hàng': transaction.users?.full_name || '',
-            'Email': transaction.users?.email || '',
-            'Sự kiện': transaction.events?.title || '',
-            'Loại vé đã đặt': item.ticket_types?.name || '',
-            'Số lượng': item.quantity,
-            'Giá vé': item.price,
-            'Thành tiền': item.quantity * item.price,
-            'Thời gian mua': new Date(transaction.created_at).toLocaleString('vi-VN'),
-            'Thời gian xác nhận': transaction.paid_at
-              ? new Date(transaction.paid_at).toLocaleString('vi-VN')
-              : 'Chưa xác nhận',
-          });
-        });
-        return acc;
-      }, []);
-
-
-      // const totalItemQuantity = flattenedData.reduce((sum, row) => sum + row['Số lượng'], 0);
+      const flattenedData = data.flatMap((transaction: any) => 
+        transaction.transaction_items.map((item: any) => ({
+          'Mã GD': transaction.id.split('-')[0].toUpperCase(),
+          'Tên khách hàng': transaction.users?.full_name || '',
+          'Email': transaction.users?.email || '',
+          'Sự kiện': transaction.events?.title || '',
+          'Loại vé đã đặt': item.ticket_types?.name || '',
+          'Số lượng': item.quantity,
+          'Giá vé': item.price,
+          'Thành tiền': item.quantity * item.price,
+          'Thời gian mua': new Date(transaction.created_at).toLocaleString('vi-VN'),
+          'Thời gian xác nhận': transaction.paid_at ? new Date(transaction.paid_at).toLocaleString('vi-VN') : 'Chưa xác nhận',
+        }))
+      );
+      
       const totalAmount = flattenedData.reduce((sum, row) => sum + row['Thành tiền'], 0);
 
-      // 4. Tạo file Excel
       const worksheet = XLSX.utils.json_to_sheet(flattenedData);
-      // Thêm hàng tổng cộng
-      XLSX.utils.sheet_add_aoa(worksheet, [['', 'TỔNG CỘNG', '', '', '', '', '', '', totalAmount]], { origin: -1 });
-
+      XLSX.utils.sheet_add_aoa(worksheet, [['', '', '', '', '', '', '', 'TỔNG CỘNG', totalAmount]], { origin: -1 });
+      
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'GiaoDich');
       XLSX.writeFile(workbook, `GiaoDich_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -210,8 +201,9 @@ export function TransactionsPage() {
             value={activePage}
             onChange={(page) => {
               setPage(page);
-              setSelection([]); // Xóa lựa chọn khi chuyển trang
+              setSelection([]);
             }}
+            withEdges
           />
         </Group>
       </Paper>

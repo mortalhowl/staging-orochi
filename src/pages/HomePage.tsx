@@ -11,7 +11,7 @@ function EventSlide({ event }: { event: Event }) {
   return (
     <Paper radius="md" style={{ overflow: 'hidden' }}>
       <Grid gutter="xl" align="center" my="xs">
-        <Grid.Col span={{ base: 12, md: 6 }}>
+        <Grid.Col span={{ base: 12, md: 8 }}>
           <Box
             style={{
               borderRadius: '1.3rem',
@@ -31,7 +31,7 @@ function EventSlide({ event }: { event: Event }) {
             style={{ backgroundColor: '#f8f9fa' }}
           /> */}
         </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 6 }} p="xl" style={{
+        <Grid.Col span={{ base: 12, md: 4 }} p="xl" style={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center'

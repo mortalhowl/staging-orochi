@@ -70,3 +70,16 @@ export interface TransactionWithDetails {
     title: string;
   } | null;
 }
+
+// Định nghĩa kiểu dữ liệu trả về từ RPC
+export interface FullTicketDetails {
+  id: string;
+  is_invite: boolean;
+  is_used: boolean;
+  used_at: string;
+  created_at: string;
+  customer_name: string;
+  customer_email: string;
+  event_name: string;
+  ticket_type_name: string;
+}

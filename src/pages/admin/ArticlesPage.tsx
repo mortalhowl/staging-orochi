@@ -9,6 +9,7 @@ import { ArticleDetailDrawer } from '../../components/admin/articles/ArticleDeta
 import { ArticlesToolbar } from '../../components/admin/articles/ArticlesToolbar';
 import type { Article } from '../../types';
 import { useDebounce } from 'use-debounce';
+import { notifications } from '@mantine/notifications';
 
 const ITEMS_PER_PAGE = 10;
 interface EventSelectItem { value: string; label: string; }
@@ -22,7 +23,7 @@ export function ArticlesPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState<string | null>(null);
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 400);
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
@@ -30,39 +31,55 @@ export function ArticlesPage() {
   const [articleToEdit, setArticleToEdit] = useState<Article | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const fetchPageData = async () => {
-    setLoading(true);
-    setSelection([]);
+  useEffect(() => {
+    const fetchPageData = async () => {
+      setLoading(true);
+      setSelection([]);
 
-    const from = (activePage - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+      const from = (activePage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase.from('articles').select('*, events(id, title)', { count: 'exact' });
+      // 1. Query để lấy dữ liệu trang hiện tại (bỏ { count: 'exact' })
+      let dataQuery = supabase
+        .from('articles')
+        .select('*, events(id, title)')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    if (debouncedSearchTerm) {
-      query = query.ilike('title', `%${debouncedSearchTerm}%`);
-    }
-    if (eventFilter) {
-      query = query.eq('event_id', eventFilter);
-    }
-    
-    query = query.order('created_at', { ascending: false }).range(from, to);
+      if (debouncedSearchTerm) {
+        dataQuery = dataQuery.ilike('title', `%${debouncedSearchTerm}%`);
+      }
+      if (eventFilter) {
+        dataQuery = dataQuery.eq('event_id', eventFilter);
+      }
+      
+      // 2. Query để đếm tổng số lượng, sử dụng RPC
+      const countParams = {
+        search_term: debouncedSearchTerm,
+        p_event_id: eventFilter,
+      };
+      const countPromise = supabase.rpc('count_articles', countParams);
 
-    const { data, error, count } = await query;
+      // 3. Chạy cả hai query song song
+      const [dataRes, countRes] = await Promise.all([dataQuery, countPromise]);
 
-    if (error) {
-      console.error('Error fetching articles:', error);
-    } else {
-      setArticles(data as Article[]);
-      setTotalItems(count ?? 0);
-    }
-    setLoading(false);
-  };
+      if (dataRes.error || countRes.error) {
+        notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách bài viết.', color: 'red' });
+        console.error(dataRes.error || countRes.error);
+      } else {
+        setArticles(dataRes.data as Article[]);
+        // 4. Lấy tổng số lượng từ kết quả của RPC
+        setTotalItems(countRes.data ?? 0);
+      }
+      setLoading(false);
+    };
 
-
-    // Lấy danh sách sự kiện cho ô Select
+    fetchPageData();
+  }, [activePage, debouncedSearchTerm, eventFilter, refreshKey]);
+  
+  useEffect(() => {
     const fetchEventsForSelect = async () => {
-      const { data, error } = await supabase.from('events').select('id, title');
+      const { data } = await supabase.from('events').select('id, title');
       if (data) {
         const eventOptions = data.map((event) => ({
           value: event.id,
@@ -71,39 +88,16 @@ export function ArticlesPage() {
         setEvents(eventOptions);
       }
     };
-
- useEffect(() => {
-    fetchPageData();
-  }, [activePage, debouncedSearchTerm, eventFilter, refreshKey]);
-  
-  useEffect(() => {
     fetchEventsForSelect();
   }, []);
 
   const handleSuccess = () => setRefreshKey((prev) => prev + 1);
+  const handleRowClick = (articleId: string) => { setSelectedArticleId(articleId); openDrawer(); };
+  const handleAddNew = () => { setArticleToEdit(null); openModal(); };
+  const handleEdit = (article: Article) => { setArticleToEdit(article); closeDrawer(); openModal(); };
+  const handleCloseModal = () => { closeModal(); setArticleToEdit(null); };
 
-  const handleRowClick = (articleId: string) => {
-    setSelectedArticleId(articleId);
-    openDrawer();
-  };
-
-  const handleAddNew = () => {
-    setArticleToEdit(null);
-    openModal();
-  };
-
-  const handleEdit = (article: Article) => {
-    setArticleToEdit(article);
-    closeDrawer();
-    openModal();
-  };
-  
-  const handleCloseModal = () => {
-    closeModal();
-    setArticleToEdit(null);
-  };
-
-return (
+  return (
     <>
       <Group justify="space-between" mb="lg">
         <Title order={2}>Quản lý Bài viết</Title>
@@ -149,6 +143,7 @@ return (
             total={Math.ceil(totalItems / ITEMS_PER_PAGE)}
             value={activePage}
             onChange={setPage}
+            withEdges // Thêm withEdges cho nhất quán
           />
         </Group>
       </Paper>
