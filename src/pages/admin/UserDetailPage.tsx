@@ -6,6 +6,7 @@ import type { UserProfile } from '../../types';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { formatDateTime } from '../../utils/formatters';
+import { UserTransactions } from '../../components/admin/users/UserTransactions';
 
 interface Module {
   id: string;
@@ -20,13 +21,6 @@ interface PermissionState {
   };
 }
 
-// Component con cho Tab Lịch sử Giao dịch
-function UserTransactions({ userId }: { userId: string }) {
-    // TODO: Xây dựng logic fetch và hiển thị bảng giao dịch của user
-    // Tạm thời hiển thị placeholder
-    return <Text c="dimmed">Chức năng hiển thị lịch sử giao dịch sẽ được phát triển sau.</Text>;
-}
-
 export function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -37,7 +31,7 @@ export function UserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
-   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
