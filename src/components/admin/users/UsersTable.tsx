@@ -1,6 +1,7 @@
 import { Table, LoadingOverlay, Text, Badge, Anchor } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import type { UserProfile } from '../../../types';
+import { formatDateTime } from '../../../utils/formatters';
 
 interface UsersTableProps {
   users: UserProfile[];
@@ -27,6 +28,11 @@ export function UsersTable({ users, loading }: UsersTableProps) {
           {roleMapping[user.role].label}
         </Badge>
       </Table.Td>
+      <Table.Td>
+        <Text size="sm" color="dimmed">
+          {formatDateTime(user.created_at)}
+        </Text>
+      </Table.Td>
     </Table.Tr>
   ));
 
@@ -39,6 +45,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
             <Table.Th>Họ và tên</Table.Th>
             <Table.Th>Email</Table.Th>
             <Table.Th>Vai trò</Table.Th>
+            <Table.Th>Ngày tạo</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
