@@ -11,7 +11,6 @@ import {
   Center,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-// === 1. IMPORT HOOK VÀ ICON MỚI ===
 import { notifications } from '@mantine/notifications';
 import { IconX } from '@tabler/icons-react';
 import { supabase } from '../../services/supabaseClient';
@@ -19,8 +18,6 @@ import { supabase } from '../../services/supabaseClient';
 export function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  // === 2. KHÔNG CẦN STATE `error` NỮA ===
-  // const [error, setError] = useState<string | null>(null);
 
   const form = useForm({
     initialValues: {
@@ -45,15 +42,15 @@ export function LoginPage() {
         throw signInError;
       }
 
-      navigate('/admin/dashboard');
+      // SỬA LỖI Ở ĐÂY: Điều hướng đến trang /admin/home
+      navigate('/admin/home');
     } catch (err: any) {
-      // === 3. HIỂN THỊ NOTIFICATION KHI CÓ LỖI ===
       notifications.show({
         title: 'Đăng nhập thất bại',
         message: err.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.',
         color: 'red',
         icon: <IconX size={18} />,
-        autoClose: 5000, // Tự động đóng sau 5 giây
+        autoClose: 5000,
       });
     } finally {
       setLoading(false);
@@ -67,9 +64,6 @@ export function LoginPage() {
         <Title order={2} ta="center" mb="xl">
           Đăng nhập Admin
         </Title>
-
-        {/* === 4. XÓA COMPONENT ALERT CŨ === */}
-
         <form onSubmit={form.onSubmit(handleLogin)}>
           <Stack>
             <TextInput

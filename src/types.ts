@@ -83,3 +83,20 @@ export interface FullTicketDetails {
   event_name: string;
   ticket_type_name: string;
 }
+
+export type UserRole = 'admin' | 'staff' | 'viewer';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+}
+
+export interface Permission {
+  moduleCode: string;
+  canView: boolean;
+  canEdit: boolean;
+}
