@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Paper,
@@ -19,6 +19,18 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // SỬA LỖI Ở ĐÂY: Thêm useEffect để kiểm tra session
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Nếu đã có session, điều hướng ngay lập tức
+        navigate('/admin/home', { replace: true });
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
   const form = useForm({
     initialValues: {
       email: '',
@@ -33,27 +45,38 @@ export function LoginPage() {
   const handleLogin = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
-      if (signInError) {
-        throw signInError;
-      }
+      if (signInError) throw signInError;
+      if (!user) throw new Error('Không thể lấy thông tin người dùng.');
 
-      // SỬA LỖI Ở ĐÂY: Điều hướng đến trang /admin/home
+      // KIỂM TRA TRẠNG THÁI SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('status')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) throw new Error('Không tìm thấy thông tin tài khoản.');
+
+      if (userProfile.status === 'disabled') {
+        // Nếu bị vô hiệu hóa, đăng xuất ngay lập tức và báo lỗi
+        await supabase.auth.signOut();
+        throw new Error('Tài khoản của bạn đã bị vô hiệu hóa.');
+      }
+      
       navigate('/admin/home');
     } catch (err: any) {
       notifications.show({
         title: 'Đăng nhập thất bại',
-        message: err.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.',
+        message: err.message,
         color: 'red',
         icon: <IconX size={18} />,
-        autoClose: 5000,
       });
-    } finally {
-      setLoading(false);
+      setLoading(false); // Chỉ setLoading(false) khi có lỗi
     }
   };
 

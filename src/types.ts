@@ -93,6 +93,8 @@ export interface UserProfile {
   phone: string | null;
   avatar_url: string | null;
   role: UserRole;
+  created_at: string;
+  status: 'active' | 'disabled';
 }
 
 export interface Permission {

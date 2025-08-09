@@ -34,6 +34,7 @@ import { MyTicketsPage } from './pages/MyTicketsPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { ForbiddenPage } from './pages/admin/ForbiddenPage';
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 
 export function App() {
 
@@ -55,6 +56,8 @@ export function App() {
             <Route path="/my-tickets" element={<MyTicketsPage />} />
           </Route>
         </Route>
+
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
 
         {/* === ADMIN ROUTES === */}
         <Route path="/admin/login" element={<LoginPage />} />

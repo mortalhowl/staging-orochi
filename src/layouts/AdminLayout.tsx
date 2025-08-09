@@ -11,7 +11,8 @@ import {
   useMantineColorScheme,
   Title,
   Transition,
-  Drawer
+  Drawer,
+  Image,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import {
@@ -58,7 +59,7 @@ export function AdminLayout() {
   const transitionTimeoutRef = useRef<number | null>(null);
   const { userProfile, permissions } = useAuthStore();
   const location = useLocation();
-  const isMobile = useMediaQuery('(max-width: 768px)'); // <--- detect mobile
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -111,9 +112,9 @@ export function AdminLayout() {
           <NavLink
             key={link.href}
             href={link.href}
-            onClick={(e) => { 
-              e.preventDefault(); 
-              navigate(link.href); 
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(link.href);
               if (isMobile) setSidebarOpened(false); // đóng menu sau khi chọn
             }}
             label={
@@ -135,7 +136,7 @@ export function AdminLayout() {
             style={{
               height: rem(36),
               paddingLeft: sidebarOpened ? rem(8) : rem(10),
-              paddingRight: rem(6),
+              paddingRight: rem(10),
               marginBottom: rem(4),
             }}
           />
@@ -149,7 +150,7 @@ export function AdminLayout() {
       header={{ height: 60 }}
       navbar={
         !isMobile
-          ? { width: sidebarOpened ? 180 : 65, breakpoint: 0 }
+          ? { width: sidebarOpened ? 180 : 57, breakpoint: 0 }
           : undefined
       }
       padding="md"
@@ -158,7 +159,7 @@ export function AdminLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm" />
-            <Title order={4}>Orochi Ticket</Title>
+            <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
           </Group>
 
           <Menu shadow="md" width={200} trigger="click">
@@ -172,9 +173,7 @@ export function AdminLayout() {
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Label>
-                <Text fw={500}>
-                  {session.user?.user_metadata?.full_name || 'Người dùng'}
-                </Text>
+                <Text fw={500}>{userProfile?.full_name || 'Người dùng'}</Text>
                 <Text size="xs" c="dimmed">
                   {session.user.email}
                 </Text>
@@ -210,13 +209,13 @@ export function AdminLayout() {
       {/* Navbar cố định trên desktop */}
       {!isMobile && (
         <AppShell.Navbar
-  px={sidebarOpened ? 'xs' : 8} // tăng padding khi đóng để icon không sát
-  py="xs"
-  style={{
-    transition: 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-    overflowX: 'hidden',
-  }}
->
+          px={sidebarOpened ? 'xs' : 8}
+          py="xs"
+          style={{
+            transition: 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            overflowX: 'hidden',
+          }}
+        >
 
           {navMenu}
         </AppShell.Navbar>
