@@ -1,0 +1,79 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../services/supabaseClient';
+import type { Article } from '../types';
+import { Container, Loader, Center, Alert, Image, Title, Text, Paper, Breadcrumbs, Anchor } from '@mantine/core';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { formatDateTime } from '../utils/formatters';
+
+export function ArticleDetailPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchArticleDetails = async () => {
+      if (!slug) return;
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('articles')
+        .select('*, events(title, slug)')
+        .eq('slug', slug)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching article details:', fetchError);
+        setError('Không tìm thấy bài viết hoặc đã có lỗi xảy ra.');
+      } else {
+        setArticle(data as Article);
+      }
+      setLoading(false);
+    };
+
+    fetchArticleDetails();
+  }, [slug]);
+
+  if (loading) {
+    return <Center h="80vh"><Loader /></Center>;
+  }
+
+  if (error) {
+    return (
+      <Container py="xl">
+        <Alert icon={<IconAlertCircle size="1rem" />} title="Lỗi!" color="red">{error}</Alert>
+      </Container>
+    );
+  }
+
+  if (!article) return null;
+
+  const breadcrumbs = [
+    { title: 'Trang chủ', href: '/' },
+    { title: 'Tin tức', href: '#' }, // Có thể tạo trang danh sách tin tức sau
+    { title: article.title, href: `/articles/${article.slug}` }
+  ].map((item, index) => (
+    <Anchor component={Link} to={item.href} key={index}>
+      {item.title}
+    </Anchor>
+  ));
+
+  return (
+    <Container size="md" my="xl">
+      <Paper withBorder p="xl" radius="md">
+        <Breadcrumbs mb="xl">{breadcrumbs}</Breadcrumbs>
+        <Title order={1}>{article.title}</Title>
+        <Text c="dimmed" size="sm" my="md">
+          Đăng ngày: {formatDateTime(article.created_at)}
+          {article.events && (
+            <> | Thuộc sự kiện: <Anchor component={Link} to={`/events/${article.events.slug}`}>{article.events.title}</Anchor></>
+          )}
+        </Text>
+        <Image src={article.image_url} radius="md" mb="xl" />
+        <div dangerouslySetInnerHTML={{ __html: article.content }} />
+      </Paper>
+    </Container>
+  );
+}

@@ -48,15 +48,13 @@ export function PublicLayout() {
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
-      padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={700} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              OROCHI TICKET
+              OROCHI
             </Text>
           </Group>
 
@@ -90,10 +88,6 @@ export function PublicLayout() {
           )}
         </Group>
       </AppShell.Header>
-
-      <AppShell.Navbar p="md">
-        <Link to="/">Trang chủ</Link>
-      </AppShell.Navbar>
 
       <AppShell.Main pt={60}>
         <Outlet />

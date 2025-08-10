@@ -35,6 +35,7 @@ import { UsersPage } from './pages/admin/UsersPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { ForbiddenPage } from './pages/admin/ForbiddenPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import { ArticleDetailPage } from './pages/ArticleDetailPage';
 
 export function App() {
 
@@ -50,6 +51,7 @@ export function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/events/:slug" element={<EventDetailPage />} />
+          <Route path="/articles/:slug" element={<ArticleDetailPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/:transactionId" element={<PaymentPage />} />
           <Route element={<PublicAuthGuard />}>
