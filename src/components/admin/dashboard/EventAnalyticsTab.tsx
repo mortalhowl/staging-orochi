@@ -48,7 +48,7 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
   if (loading) {
     return <Center h={400}><Loader /></Center>;
   }
-  
+
   const chartData = analyticsData.filter(d => chartEvents.includes(d.event_name));
 
   return (
@@ -65,7 +65,10 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
           searchable
         />
         <ResponsiveContainer width="100%" height={300} style={{ marginTop: '20px' }}>
-          <BarChart data={chartData}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 20, right: 20, left: 50, bottom: 20 }} // thêm khoảng trống bên trái
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="event_name" />
             <YAxis />
@@ -75,6 +78,7 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
             <Bar dataKey="tickets_sold" name="Số vé bán" fill="#82ca9d" />
           </BarChart>
         </ResponsiveContainer>
+
       </Paper>
 
       <Paper withBorder radius="md" p="md" mt="xl">

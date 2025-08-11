@@ -3,7 +3,8 @@ import { Container, Title, Tabs, Group } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { DatesRangeValue } from '@mantine/dates';
 import { OverviewTab } from '../../components/admin/dashboard/OverviewTab';
-import { EventAnalyticsTab } from '../../components/admin/dashboard/EventAnalyticsTab'; // 1. Import component mới
+import { EventAnalyticsTab } from '../../components/admin/dashboard/EventAnalyticsTab'; 
+import { TransactionAnalyticsTab } from '../../components/admin/dashboard/TransactionAnalyticsTab';
 
 export function AdminDashboardPage() {
   const today = new Date();
@@ -36,18 +37,20 @@ export function AdminDashboardPage() {
       <Tabs defaultValue="overview">
         <Tabs.List>
           <Tabs.Tab value="overview">Tổng quan</Tabs.Tab>
-          {/* 2. Kích hoạt tab mới */}
           <Tabs.Tab value="events">Phân tích Sự kiện</Tabs.Tab>
-          <Tabs.Tab value="transactions" disabled>Phân tích Giao dịch</Tabs.Tab>
+          <Tabs.Tab value="transactions">Phân tích Giao dịch</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="overview" pt="md">
           <OverviewTab dateRange={dateRange} />
         </Tabs.Panel>
 
-        {/* 3. Render component mới */}
         <Tabs.Panel value="events" pt="md">
           <EventAnalyticsTab dateRange={dateRange} />
+        </Tabs.Panel>
+        
+        <Tabs.Panel value="transactions" pt="md">
+          <TransactionAnalyticsTab dateRange={dateRange} />
         </Tabs.Panel>
       </Tabs>
     </Container>
