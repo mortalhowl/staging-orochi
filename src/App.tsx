@@ -1,3 +1,4 @@
+// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
 import { useEffect } from 'react';
@@ -36,6 +37,7 @@ import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { ForbiddenPage } from './pages/admin/ForbiddenPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { ArticleDetailPage } from './pages/ArticleDetailPage';
+import { ProfilePage } from './pages/admin/ProfilePage'; 
 
 export function App() {
 
@@ -67,7 +69,8 @@ export function App() {
         <Route element={<AuthGuard />}>
           <Route element={<AdminLayout />}>
             {/* Các trang chung mà mọi admin/staff đều có thể vào */}
-            <Route path="/admin/home" element={<AdminHomePage />} /> 
+            <Route path="/admin/home" element={<AdminHomePage />} />
+            <Route path="/admin/profile" element={<ProfilePage />} />
             <Route path="/admin/forbidden" element={<ForbiddenPage />} />
 
             {/* Bọc mỗi module trong một PermissionGuard tương ứng */}

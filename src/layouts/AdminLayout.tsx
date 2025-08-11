@@ -1,3 +1,4 @@
+// src/layouts/AdminLayout.tsx
 import { useState, useRef, useEffect } from 'react';
 import {
   AppShell,
@@ -30,7 +31,7 @@ import {
   IconScan,
   IconUsers,
 } from '@tabler/icons-react';
-import { Outlet, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import type { Session } from '@supabase/supabase-js';
@@ -61,17 +62,11 @@ export function AdminLayout() {
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  const { logout } = useAuthStore();
+
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      notifications.show({
-        title: 'Lỗi đăng xuất',
-        message: error.message,
-        color: 'red',
-      });
-    } else {
-      navigate('/admin/login');
-    }
+    await logout(); // 🔹 Reset state
+    navigate('/admin/login');
   };
 
   const toggleSidebar = () => {
@@ -159,7 +154,21 @@ export function AdminLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm" />
-            <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
+            <Link to="/admin/home" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Group>
+                <Image src="/logo.png" alt="Orochi Logo" style={{ width: '30px' }} />
+                <Text
+                  fw={900} // Đậm nhất
+                  fz="xl" // Chữ to
+                  style={{
+                    fontFamily: "'Poppins', sans-serif", // Font nổi bật
+                  }}
+                  c="#008a87"
+                >
+                  Orochi
+                </Text>
+              </Group>
+            </Link>
           </Group>
 
           <Menu shadow="md" width={200} trigger="click">

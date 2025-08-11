@@ -1,3 +1,5 @@
+
+//src/store/authStore.ts
 import { create } from 'zustand';
 import { supabase } from '../services/supabaseClient';
 import type{ Session, User } from '@supabase/supabase-js';
@@ -58,8 +60,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: async () => {
-    await supabase.auth.signOut();
-    set({ session: null, userProfile: null, permissions: [], isLoading: false });
-  },
+logout: async () => {
+  await supabase.auth.signOut();
+  set({ session: null, userProfile: null, permissions: [], isLoading: false });
+},
+
 }));
