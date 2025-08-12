@@ -100,7 +100,7 @@ export function TransactionsPage() {
 
   const handleExport = async () => {
     setExporting(true);
-    notifications.show({ id: 'export-start', loading: true, title: 'Đang xuất dữ liệu', message: 'Vui lòng chờ...', autoClose: false });
+    // notifications.show({ id: 'export-start', loading: true, title: 'Đang xuất dữ liệu', message: 'Vui lòng chờ...', autoClose: false });
 
     try {
       // Logic xuất Excel giờ đây cũng nên dùng RPC để đảm bảo dữ liệu nhất quán
@@ -152,9 +152,9 @@ export function TransactionsPage() {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'GiaoDich');
       XLSX.writeFile(workbook, `GiaoDich_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-      notifications.update({ id: 'export-start', color: 'green', title: 'Thành công', message: `Đã xuất ${data.length} giao dịch.`, autoClose: 3000 });
+      // notifications.update({ id: 'export-start', color: 'green', title: 'Thành công', message: `Đã xuất ${data.length} giao dịch.`, autoClose: 3000 });
     } catch (err: any) {
-      notifications.update({ id: 'export-start', color: 'red', title: 'Thất bại', message: 'Xuất dữ liệu thất bại.', autoClose: 3000 });
+      // notifications.update({ id: 'export-start', color: 'red', title: 'Thất bại', message: 'Xuất dữ liệu thất bại.', autoClose: 3000 });
       console.error(err);
     } finally {
       setExporting(false);

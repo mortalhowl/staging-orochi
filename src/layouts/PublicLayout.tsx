@@ -6,6 +6,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
 import { IconLogout, IconTicket, IconBrandGoogle } from '@tabler/icons-react';
 import type { UserProfile } from '../types';
+import { Footer } from '../components/public/Footer';
 
 export function PublicLayout() {
   const [opened, { toggle }] = useDisclosure();
@@ -111,6 +112,8 @@ export function PublicLayout() {
       <AppShell.Main pt={60}>
         <Outlet />
       </AppShell.Main>
+
+      <Footer />
     </AppShell>
   );
 }

@@ -82,6 +82,8 @@ export interface FullTicketDetails {
   customer_email: string;
   event_name: string;
   ticket_type_name: string;
+  checked_in_by_name: string | null; 
+  status: 'active' | 'disabled';
 }
 
 export type UserRole = 'admin' | 'staff' | 'viewer';

@@ -23,18 +23,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
     const staffUser = await getUser(supabaseAdmin, req)
-
-    // SỬA LỖI Ở ĐÂY: Đảm bảo nhân viên soát vé tồn tại trong bảng public.users
-    // Dùng upsert để tạo nếu chưa có, hoặc không làm gì nếu đã có.
-    const { error: upsertError } = await supabaseAdmin
-      .from('users')
-      .upsert({ 
-        id: staffUser.id, 
-        email: staffUser.email, 
-        full_name: staffUser.user_metadata.full_name 
-      }, { onConflict: 'id' });
-    if (upsertError) throw upsertError;
-
+    
+    // Đảm bảo nhân viên soát vé tồn tại trong bảng public.users
+    await supabaseAdmin.from('users').upsert({ id: staffUser.id, email: staffUser.email, full_name: staffUser.user_metadata.full_name }, { onConflict: 'id' });
 
     // Lấy thông tin vé
     const { data: ticket, error: ticketError } = await supabaseAdmin
@@ -50,10 +41,16 @@ Deno.serve(async (req) => {
     if (ticketEventId !== eventId) {
       throw new Error('WRONG_EVENT')
     }
+
+    // KIỂM TRA MỚI: Kiểm tra trạng thái của vé
+    if (ticket.status === 'disabled') {
+      throw new Error('TICKET_DISABLED');
+    }
     
     // Nếu chỉ là kiểm tra (chưa nhấn nút check-in)
     if (!performCheckIn) {
-      return new Response(JSON.stringify({ status: ticket.is_used ? 'ALREADY_USED' : 'VALID', ticket }), {
+      const status = ticket.is_used ? 'ALREADY_USED' : 'VALID';
+      return new Response(JSON.stringify({ status, ticket }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -83,6 +80,8 @@ Deno.serve(async (req) => {
     const statusMap: { [key: string]: any } = {
       'INVALID_TICKET': { message: 'Mã vé không hợp lệ.', status: 404 },
       'WRONG_EVENT': { message: 'Vé này không thuộc sự kiện này.', status: 400 },
+      'TICKET_DISABLED': { message: 'Vé này đã bị vô hiệu hóa.', status: 403 }, // Thêm lỗi mới
+      'ALREADY_USED': { message: 'Vé đã được sử dụng.', status: 409 },
       'CHECK_IN_FAILED': { message: 'Vé vừa được người khác check-in hoặc đã có lỗi xảy ra.', status: 409 },
     }
     const errorResponse = statusMap[error.message] || { message: error.message, status: 500 }
@@ -93,3 +92,4 @@ Deno.serve(async (req) => {
     })
   }
 })
+

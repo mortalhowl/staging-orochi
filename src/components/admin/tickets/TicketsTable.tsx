@@ -1,15 +1,27 @@
 import { Table, LoadingOverlay, Text, Badge, Tooltip } from '@mantine/core';
 import { formatDateTime } from '../../../utils/formatters';
-import type { FullTicketDetails } from '../../../types';
+
+export interface FullTicketDetails {
+  id: string;
+  is_invite: boolean;
+  is_used: boolean;
+  used_at: string;
+  created_at: string;
+  customer_name: string;
+  customer_email: string;
+  event_name: string;
+  ticket_type_name: string;
+}
 
 interface TicketsTableProps {
   tickets: FullTicketDetails[];
   loading: boolean;
+  onRowClick: (ticketId: string) => void; // Thêm prop onRowClick
 }
 
-export function TicketsTable({ tickets, loading }: TicketsTableProps) {
+export function TicketsTable({ tickets, loading, onRowClick }: TicketsTableProps) {
   const rows = tickets.map((ticket) => (
-    <Table.Tr key={ticket.id}>
+    <Table.Tr key={ticket.id} onClick={() => onRowClick(ticket.id)} style={{ cursor: 'pointer' }}>
       <Table.Td>
         <Tooltip label={ticket.id} withArrow>
             <Text truncate maw={100}>{ticket.id.split('-')[0]}</Text>
