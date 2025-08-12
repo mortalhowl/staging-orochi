@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Paper, Pagination, Group, Button } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Button, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TicketsToolbar } from '../../components/admin/tickets/TicketsToolbar';
@@ -14,6 +14,36 @@ import { formatDateTime } from '../../utils/formatters';
 
 const ITEMS_PER_PAGE = 20;
 
+function TicketsStats({ stats }: { stats: any }) {
+    if (!stats) return null;
+    return (
+        <Paper withBorder p="md" radius="md" mb="md">
+            <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }}>
+                <Stack align="center" gap={0}>
+                    <Text size="xl" fw={700}>{stats.total_tickets}</Text>
+                    <Text size="xs" c="dimmed">Tổng số vé</Text>
+                </Stack>
+                <Stack align="center" gap={0}>
+                    <Text size="xl" fw={700} c="green">{stats.checked_in_count}</Text>
+                    <Text size="xs" c="dimmed">Đã check-in</Text>
+                </Stack>
+                <Stack align="center" gap={0}>
+                    <Text size="xl" fw={700} c="gray">{stats.not_checked_in_count}</Text>
+                    <Text size="xs" c="dimmed">Chưa check-in</Text>
+                </Stack>
+                <Stack align="center" gap={0}>
+                    <Text size="xl" fw={700} c="teal">{stats.active_count}</Text>
+                    <Text size="xs" c="dimmed">Hoạt động</Text>
+                </Stack>
+                <Stack align="center" gap={0}>
+                    <Text size="xl" fw={700} c="red">{stats.disabled_count}</Text>
+                    <Text size="xs" c="dimmed">Vô hiệu hóa</Text>
+                </Stack>
+            </SimpleGrid>
+        </Paper>
+    );
+}
+
 export function IssuedTicketsPage() {
   const [tickets, setTickets] = useState<FullTicketDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +53,7 @@ export function IssuedTicketsPage() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [stats, setStats] = useState<any>(null);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -48,13 +79,18 @@ export function IssuedTicketsPage() {
         .range((activePage - 1) * ITEMS_PER_PAGE, activePage * ITEMS_PER_PAGE - 1);
       
       const countPromise = supabase.rpc('count_issued_tickets', rpcParams);
-      const [dataRes, countRes] = await Promise.all([dataPromise, countPromise]);
+      const statsPromise = supabase.rpc('get_issued_tickets_stats', rpcParams).single();
 
-      if (dataRes.error || countRes.error) {
-        notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách vé.', color: 'red' });
+      const [dataRes, countRes, statsRes] = await Promise.all([dataPromise, countPromise, statsPromise]);
+
+      if (dataRes.error || countRes.error || statsRes.error) {
+        const error = dataRes.error || countRes.error || statsRes.error;
+        notifications.show({ title: 'Lỗi', message: 'Không thể tải dữ liệu.', color: 'red' });
+        console.error(error);
       } else {
         setTickets(dataRes.data as any);
         setTotalItems(countRes.data ?? 0);
+        setStats(statsRes.data);
       }
       setLoading(false);
     };
@@ -124,6 +160,7 @@ export function IssuedTicketsPage() {
         </Button>
       </Group>
       
+      <TicketsStats stats={stats} />
       <TicketsToolbar filters={filters} setFilters={setFilters} />
 
       <Paper withBorder p="md" radius="md">
