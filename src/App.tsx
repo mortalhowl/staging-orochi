@@ -38,6 +38,7 @@ import { ForbiddenPage } from './pages/admin/ForbiddenPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { ArticleDetailPage } from './pages/ArticleDetailPage';
 import { ProfilePage } from './pages/admin/ProfilePage'; 
+import { CompanyInfoPage } from './pages/admin/CompanyInfoPage';
 
 export function App() {
 
@@ -104,6 +105,7 @@ export function App() {
               <Route path="/admin/settings/bank" element={<BankConfigPage />} />
               <Route path="/admin/settings/email-config" element={<EmailConfigPage />} />
               <Route path="/admin/settings/email-templates" element={<EmailTemplatesPage />} />
+              <Route path="/admin/settings/company" element={<CompanyInfoPage />} />
             </Route>
           </Route>
         </Route>

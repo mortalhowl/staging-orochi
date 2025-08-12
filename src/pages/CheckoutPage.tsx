@@ -144,11 +144,14 @@ export function CheckoutPage() {
 
               <Button
                 size="lg"
+                bg="#008a87"             
                 onClick={handleCheckout}
                 loading={loading}
-                leftSection={!user && <IconBrandGoogle size={18} />}
+                leftSection={!user && <IconBrandGoogle size={18} 
+                />}
               >
-                {user ? 'Xác nhận và Lấy mã thanh toán' : 'Đăng nhập & Tiếp tục'}
+                {/* {user ? 'Xác nhận và Lấy mã thanh toán' : 'Đăng nhập & Tiếp tục'} */}
+                Xác nhận
               </Button>
             </Stack>
           </Paper>

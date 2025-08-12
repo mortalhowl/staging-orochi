@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { Container, Loader, Center, Alert, Paper, Title, Text, Stack, Image, Button, Group, Divider, Box } from '@mantine/core';
+import { Container, Loader, Center, Alert, Paper, Title, Text, Stack, Image, Button, Group } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
-import { IconAlertCircle, IconCopy, IconCheck, IconDownload } from '@tabler/icons-react';
+import { IconAlertCircle, IconCopy, IconDownload } from '@tabler/icons-react';
 
 interface TransactionDetails {
   id: string;
   total_amount: number;
+  user_id: string; // Thêm user_id để kiểm tra
 }
 
 export function PaymentPage() {
@@ -29,22 +30,38 @@ export function PaymentPage() {
 
       try {
         setLoading(true);
-        // Lấy song song thông tin giao dịch và thông tin ngân hàng
-        const transactionPromise = supabase.from('transactions').select('id, total_amount').eq('id', transactionId).single();
-        const bankConfigPromise = supabase.from('bank_configs').select('*').limit(1).single();
 
-        // Gọi Edge Function để tạo QR code
+        // Lấy session của người dùng hiện tại
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) throw new Error('Giao dịch không hợp lệ.');
+        const currentUserId = session.user.id;
+
+        // Lấy thông tin giao dịch
+        const { data: transData, error: transError } = await supabase
+            .from('transactions')
+            .select('id, total_amount, user_id')
+            .eq('id', transactionId)
+            .single();
+
+        if (transError) throw new Error('Không tìm thấy thông tin giao dịch.');
+
+        // BƯỚC KIỂM TRA BẢO MẬT
+        if (transData.user_id !== currentUserId) {
+            throw new Error('Bạn không có quyền truy cập vào giao dịch này.');
+        }
+        setTransaction(transData);
+
+        // Nếu đã qua kiểm tra, tiếp tục lấy thông tin khác
+        const bankConfigPromise = supabase.from('bank_configs').select('*').limit(1).single();
         const qrPromise = supabase.functions.invoke('generate-qr', {
           body: { transactionId },
         });
 
-        const [transRes, bankRes, qrRes] = await Promise.all([transactionPromise, bankConfigPromise, qrPromise]);
+        const [bankRes, qrRes] = await Promise.all([bankConfigPromise, qrPromise]);
 
-        if (transRes.error) throw new Error('Không tìm thấy thông tin giao dịch.');
         if (bankRes.error) throw new Error('Chưa cấu hình thông tin ngân hàng.');
         if (qrRes.error) throw new Error('Không thể tạo mã QR.');
 
-        setTransaction(transRes.data);
         setBankConfig(bankRes.data);
         setQrCodeUrl(qrRes.data.qrDataURL);
 
@@ -57,7 +74,7 @@ export function PaymentPage() {
 
     fetchPaymentInfo();
   }, [transactionId]);
-
+  
   const handleDownloadQR = () => {
     if (qrCodeUrl) {
       const link = document.createElement('a');
@@ -74,84 +91,35 @@ export function PaymentPage() {
 
   return (
     <Container my="xl" size="xs">
-      <Stack align="center">
-        <Paper withBorder p="xs" radius="md" w="100%">
-          <Box pb="xs">
-            <Text c="dimmed" fw={600}>NGÂN HÀNG</Text>
-          </Box>
-          <Divider />
-          <Group justify="space-between" pt="xs">
-            <Text fw={700}>{bankConfig?.bank_name}</Text>
-          </Group>
-        </Paper>
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center">
+          <Title order={2} ta="center">Thanh toán đơn hàng</Title>
+          <Text ta="center">Sử dụng App ngân hàng hoặc Ví điện tử bất kỳ để quét mã QR dưới đây</Text>
+          
+          {qrCodeUrl && <Image src={qrCodeUrl} maw={300} />}
 
-        <Paper withBorder p="xs" radius="md" w="100%">
-          <Box pb="xs">
-            <Text c="dimmed" fw={600}>SỐ TÀI KHOẢN</Text>
-          </Box>
-          <Divider />
+          <Button onClick={handleDownloadQR} leftSection={<IconDownload size={16} />} variant="light" my="sm">
+            Tải mã QR
+          </Button>
 
-          {/* Phần nội dung bên dưới */}
-          <Group justify="space-between" pt="xs">
-            <Text fw={700}>{bankConfig?.account_number}</Text>
-            <Button
-              onClick={() => clipboard.copy(bankConfig?.account_number)}
-              variant="subtle"
-              size="compact-xs"
-              px={4}
-            >
-              <IconCopy size={16} />
-            </Button>
-          </Group>
-        </Paper>
-
-        <Paper withBorder p="xs" radius="md" w="100%">
-          <Box pb="xs">
-            <Text c="dimmed" fw={600}>NỘI DUNG CHUYỂN KHOẢN</Text>
-          </Box>
-          <Divider />
-
-          {/* Phần nội dung bên dưới */}
-          <Group justify="space-between" pt="xs">
-            <Text fw={700} c="red">{transactionId}</Text>
-            <Button
-              onClick={() => clipboard.copy(transactionId)}
-              variant="subtle"
-              size="compact-xs"
-              px={4}
-            >
-              <IconCopy size={16} />
-            </Button>
-          </Group>
-        </Paper>
-
-
-        <Title order={2} ta="center">Thanh toán đơn hàng</Title>
-        <Text ta="center">Sử dụng App ngân hàng hoặc Ví điện tử bất kỳ để quét mã QR dưới đây</Text>
-
-        {qrCodeUrl && <Image src={qrCodeUrl} maw={300} />}
-
-        <Button onClick={handleDownloadQR} leftSection={<IconDownload size={16} />} variant="light" my="sm">
-          Tải mã QR
-        </Button>
-
-        {/* <Stack w="100%">
-          <Group justify="space-between"><Text c="dimmed">Ngân hàng:</Text><Text fw={500}>{bankConfig?.bank_name}</Text></Group>
-          <Group justify="space-between"><Text c="dimmed">Chủ tài khoản:</Text><Text fw={500}>{bankConfig?.account_name}</Text></Group>
-          <Group justify="space-between"><Text c="dimmed">Số tài khoản:</Text><Text fw={500}>{bankConfig?.account_number}</Text></Group>
-          <Group justify="space-between"><Text c="dimmed">Số tiền:</Text><Text fw={700} c="blue.6" size="xl">{transaction?.total_amount.toLocaleString('vi-VN')}đ</Text></Group>
-          <Group justify="space-between" wrap="nowrap">
-            <Text c="dimmed">Nội dung:</Text>
-            <Group gap="xs">
-              <Text fw={700} c="red">{transactionId}</Text>
-              <Button onClick={() => clipboard.copy(transactionId)} size="xs" variant="outline">
-                {clipboard.copied ? 'Đã chép' : 'Sao chép'}
-              </Button>
+          <Stack w="100%">
+            <Group justify="space-between"><Text c="dimmed">Ngân hàng:</Text><Text fw={500}>{bankConfig?.bank_name}</Text></Group>
+            <Group justify="space-between"><Text c="dimmed">Chủ tài khoản:</Text><Text fw={500}>{bankConfig?.account_name}</Text></Group>
+            <Group justify="space-between"><Text c="dimmed">Số tài khoản:</Text><Text fw={500}>{bankConfig?.account_number}</Text></Group>
+            <Group justify="space-between"><Text c="dimmed">Số tiền:</Text><Text fw={700} c="blue.6" size="xl">{transaction?.total_amount.toLocaleString('vi-VN')}đ</Text></Group>
+            <Group justify="space-between" wrap="nowrap">
+                <Text c="dimmed">Nội dung:</Text>
+                <Group gap="xs">
+                    <Text fw={700} c="red">{transactionId}</Text>
+                    <Button onClick={() => clipboard.copy(transactionId)} size="xs" variant="outline">
+                        {clipboard.copied ? 'Đã chép' : 'Sao chép'}
+                    </Button>
+                </Group>
             </Group>
-          </Group>
-        </Stack> */}
-        <Text size="xs" c="dimmed" ta="center" mt="md">Đơn hàng sẽ được xác nhận trong vòng 1 - 3 ngày sau khi bạn hoàn tất chuyển khoản. Vui lòng giữ lại biên lai.</Text>
-      </Stack>
+          </Stack>
+          <Text size="xs" c="dimmed" ta="center" mt="md">Đơn hàng sẽ được xác nhận thủ công sau khi bạn hoàn tất chuyển khoản. Vui lòng giữ lại biên lai.</Text>
+        </Stack>
+      </Paper>
     </Container>
   );
 }

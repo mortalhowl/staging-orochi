@@ -60,9 +60,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-logout: async () => {
-  await supabase.auth.signOut();
-  set({ session: null, userProfile: null, permissions: [], isLoading: false });
-},
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ session: null, userProfile: null, permissions: [], isLoading: false });
+  }
 
 }));

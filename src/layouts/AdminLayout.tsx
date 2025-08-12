@@ -62,11 +62,17 @@ export function AdminLayout() {
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const { logout } = useAuthStore();
-
-  const handleLogout = async () => {
-    await logout(); // 🔹 Reset state
-    navigate('/admin/login');
+   const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      notifications.show({
+        title: 'Lỗi đăng xuất',
+        message: error.message,
+        color: 'red',
+      });
+    } else {
+      navigate('/admin/login');
+    }
   };
 
   const toggleSidebar = () => {

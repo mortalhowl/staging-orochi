@@ -36,7 +36,12 @@ function EventSlide({ event }: { event: Event }) {
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          <Title order={1} c="#008a87" mb="md">
+          <Title order={1} c="#008a87" mb="md" 
+          style={{ 
+            fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+            fontSize: '2rem',
+            fontWeight: 700 
+          }}>
             {event.title.toUpperCase()}
           </Title>
           <Text lineClamp={5} mb="xl">
@@ -73,7 +78,12 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
           {article.events.title}
         </Badge>
       )}
-      <Title order={2} c="#008a87" mb="md" fw="bold">
+      <Title order={2} c="#008a87" mb="md" fw="bold"
+      style={{ 
+            fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+            fontSize: '1.7rem',
+            fontWeight: 700 
+          }}>
         {article.title?.toUpperCase()}
       </Title>
       <Text lineClamp={5}>
@@ -184,9 +194,24 @@ export function HomePage() {
           slideGap="md"
           pb="xl"
           styles={{
-            indicators: {
-              bottom: 1,
-              position: 'absolute',
+            control: {
+              display: 'none',
+              // background: '#f8f9fa',
+              // border: 'none',
+              // color: '#008a87',
+              // boxShadow: 'none',
+              // '&:hover': {
+              //   backgroundColor: 'rgba(0, 0, 0, 0.2)', // hover hơi đậm hơn
+              // },
+            },
+            indicator: {
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#008a87',
+              '&[data-active]': {
+                backgroundColor: '#005f5f', // màu khi active
+              },
             },
           }}
         >
@@ -200,8 +225,18 @@ export function HomePage() {
 
       {/* Khu vực Bài viết */}
       {articles.length > 0 && (
-        <div style={{ marginTop: '3rem' }}>
-          <Title order={2} ta="center" mb="xl">
+        <div style={{ marginTop: '1rem' }}>
+          <Title
+            order={2}
+            ta="center"
+            mb="xl"
+            style={{
+              fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+              color: '#008a87',
+              fontSize: '1.5rem',
+              fontWeight: 700,
+            }}
+          >
             Khách mời & Tin tức
           </Title>
           {articles.map((article, index) => (
