@@ -62,7 +62,7 @@ export function AdminLayout() {
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-   const handleLogout = async () => {
+  const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       notifications.show({
@@ -167,7 +167,10 @@ export function AdminLayout() {
                   fw={900} // Đậm nhất
                   fz="xl" // Chữ to
                   style={{
-                    fontFamily: "'Poppins', sans-serif", // Font nổi bật
+                    fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+                    color: '#008a87',
+                    fontSize: '1.5rem',
+                    fontWeight: 700,
                   }}
                   c="#008a87"
                 >

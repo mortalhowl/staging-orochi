@@ -7,13 +7,7 @@ import { Container, Loader, Center, Alert, Image, Title, Text, Grid, Stack, Divi
 import { IconAlertCircle, IconCalendar, IconMapPin, IconClock } from '@tabler/icons-react';
 import { TicketSelection } from '../components/public/TicketSelection';
 import { ArticleGrid } from '../components/public/ArticleGrid';
-import { formatDate } from '../utils/formatters';
-
-const formatDateRange = (start: string, end: string) => {
-  const startDate = new Date(start).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const endDate = new Date(end).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  return `${startDate} - ${endDate}`;
-};
+import { formatDateRange } from '../utils/formatters';
 
 export function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -64,10 +58,13 @@ export function EventDetailPage() {
           <Grid.Col span={{ base: 12, md: 8 }}>
             <Stack>
               <Title order={2} style={{
-                background: 'linear-gradient(45deg, #088e8b, #33b8b4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 700
+                // background: 'linear-gradient(45deg, #088e8b, #33b8b4)',
+                // WebkitBackgroundClip: 'text',
+                // WebkitTextFillColor: 'transparent',
+                fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+              color: '#008a87',
+              fontSize: '1.5rem',
+              fontWeight: 700,
               }}>
                 {event.title}
               </Title>
@@ -87,7 +84,7 @@ export function EventDetailPage() {
                   <div>
                     <Text fw={500}>Thời gian diễn ra</Text>
                     <Text size="sm" c="dimmed">
-                      {formatDate(event.start_time)} - {formatDate(event.end_time)}
+                      {formatDateRange(event.start_time, event.end_time)}
                     </Text>
                   </div>
                 </Group>

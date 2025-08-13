@@ -91,7 +91,8 @@ function MyTicketsTab({ session }: { session: Session }) {
     };
 
     fetchAndProcessTickets();
-  }, [session.user]);
+  // SỬA LỖI Ở ĐÂY: Mảng rỗng `[]` để useEffect chỉ chạy 1 lần duy nhất
+  }, []);
 
   if (loading) {
     return <Center p="xl"><Loader /></Center>;
@@ -124,7 +125,7 @@ function MyTicketsTab({ session }: { session: Session }) {
       ))}
     </Accordion>
   ) : (
-    <Text>Bạn chưa có vé nào.</Text>
+    <Text ta="center">Bạn chưa có vé nào.</Text>
   );
 }
 
@@ -149,7 +150,8 @@ function TransactionHistoryTab({ session }: { session: Session }) {
       }
     };
     fetchHistory();
-  }, [session.user]);
+  // SỬA LỖI Ở ĐÂY: Mảng rỗng `[]` để useEffect chỉ chạy 1 lần duy nhất
+  }, []);
 
   if (loading) return <Center p="xl"><Loader /></Center>;
   
@@ -206,7 +208,7 @@ export function MyTicketsPage() {
   return (
     <Container my="xl">
       <Title order={2} mb="xl">Tài khoản của tôi</Title>
-      <Tabs defaultValue="tickets" variant="pills">
+      <Tabs defaultValue="tickets" variant='outline' style={{ marginBottom: '1rem' }}>
         <Tabs.List>
           <Tabs.Tab value="tickets" leftSection={<IconTicket size={16}/>}>Vé của tôi</Tabs.Tab>
           <Tabs.Tab value="history" leftSection={<IconHistory size={16}/>}>Lịch sử giao dịch</Tabs.Tab>

@@ -31,3 +31,9 @@ export const formatDate = (dateString?: string | Date | null): string => {
     year: 'numeric',
   });
 };
+
+export const formatDateRange = (start: string, end: string) => {
+  const startDate = new Date(start).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const endDate = new Date(end).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return `${startDate} - ${endDate}`;
+};

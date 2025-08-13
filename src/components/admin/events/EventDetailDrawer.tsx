@@ -40,7 +40,7 @@ export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit,
   }, [eventId, refreshKey, opened]);
 
   return (
-    <Drawer opened={opened} onClose={onClose} title="Chi tiết sự kiện" position="right" size="lg">
+    <Drawer opened={opened} onClose={onClose} title="Chi tiết" position="right" size="lg">
       <LoadingOverlay visible={loading} />
       {event && (
         <Tabs defaultValue="details">

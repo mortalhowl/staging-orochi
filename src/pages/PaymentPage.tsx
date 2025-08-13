@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { Container, Loader, Center, Alert, Paper, Title, Text, Stack, Image, Button, Group } from '@mantine/core';
+import { Container, Loader, Center, Alert, Paper, Title, Text, Stack, Image, Button, Group, Grid, GridCol, Table } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
-import { IconAlertCircle, IconCopy, IconDownload } from '@tabler/icons-react';
+import { IconAlertCircle, IconCopy, IconDownload, IconInfoCircle } from '@tabler/icons-react';
 
 interface TransactionDetails {
   id: string;
@@ -38,16 +38,16 @@ export function PaymentPage() {
 
         // Lấy thông tin giao dịch
         const { data: transData, error: transError } = await supabase
-            .from('transactions')
-            .select('id, total_amount, user_id')
-            .eq('id', transactionId)
-            .single();
+          .from('transactions')
+          .select('id, total_amount, user_id')
+          .eq('id', transactionId)
+          .single();
 
         if (transError) throw new Error('Không tìm thấy thông tin giao dịch.');
 
         // BƯỚC KIỂM TRA BẢO MẬT
         if (transData.user_id !== currentUserId) {
-            throw new Error('Bạn không có quyền truy cập vào giao dịch này.');
+          throw new Error('Bạn không có quyền truy cập vào giao dịch này.');
         }
         setTransaction(transData);
 
@@ -74,7 +74,7 @@ export function PaymentPage() {
 
     fetchPaymentInfo();
   }, [transactionId]);
-  
+
   const handleDownloadQR = () => {
     if (qrCodeUrl) {
       const link = document.createElement('a');
@@ -91,35 +91,124 @@ export function PaymentPage() {
 
   return (
     <Container my="xl" size="xs">
-      <Paper withBorder p="xl" radius="md">
-        <Stack align="center">
-          <Title order={2} ta="center">Thanh toán đơn hàng</Title>
-          <Text ta="center">Sử dụng App ngân hàng hoặc Ví điện tử bất kỳ để quét mã QR dưới đây</Text>
-          
-          {qrCodeUrl && <Image src={qrCodeUrl} maw={300} />}
+      <Alert
+        icon={<IconInfoCircle size={16} />}
+        title="Lưu ý!"
+        color="yellow"
+        variant="light"
+        my="md"
+      >
+        Giao dịch sẽ được xử lý trong khoảng từ 1 đến 3 ngày làm việc. Vui lòng theo dõi trạng thái giao dịch trong <b> Vé của tôi &gt; Lịch sử giao dịch</b>.
+      </Alert>
 
-          <Button onClick={handleDownloadQR} leftSection={<IconDownload size={16} />} variant="light" my="sm">
+      <Paper withBorder p="xs" radius="md">
+        <Stack align="center">
+          <Text ta="center" fw="bold">Quét mã QR để thanh toán</Text>
+          {qrCodeUrl && <Image src={qrCodeUrl} maw={300} />}
+          <Button onClick={handleDownloadQR} leftSection={<IconDownload size={16} />} variant="light" my="sx">
             Tải mã QR
           </Button>
-
-          <Stack w="100%">
-            <Group justify="space-between"><Text c="dimmed">Ngân hàng:</Text><Text fw={500}>{bankConfig?.bank_name}</Text></Group>
-            <Group justify="space-between"><Text c="dimmed">Chủ tài khoản:</Text><Text fw={500}>{bankConfig?.account_name}</Text></Group>
-            <Group justify="space-between"><Text c="dimmed">Số tài khoản:</Text><Text fw={500}>{bankConfig?.account_number}</Text></Group>
-            <Group justify="space-between"><Text c="dimmed">Số tiền:</Text><Text fw={700} c="blue.6" size="xl">{transaction?.total_amount.toLocaleString('vi-VN')}đ</Text></Group>
-            <Group justify="space-between" wrap="nowrap">
-                <Text c="dimmed">Nội dung:</Text>
-                <Group gap="xs">
-                    <Text fw={700} c="red">{transactionId}</Text>
-                    <Button onClick={() => clipboard.copy(transactionId)} size="xs" variant="outline">
-                        {clipboard.copied ? 'Đã chép' : 'Sao chép'}
-                    </Button>
-                </Group>
-            </Group>
-          </Stack>
-          <Text size="xs" c="dimmed" ta="center" mt="md">Đơn hàng sẽ được xác nhận thủ công sau khi bạn hoàn tất chuyển khoản. Vui lòng giữ lại biên lai.</Text>
         </Stack>
       </Paper>
+
+      <Text size="xs" c="dimmed" ta="center" mt="md" style={{ fontStyle: 'italic' }}>(Nếu không thể quét, vui lòng chuyển khoản theo thông tin dưới đây)</Text>
+
+      <Stack mt="md">
+        <Table striped highlightOnHover withTableBorder withColumnBorders >
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td colSpan={2} align="left">
+                <Text c="dimmed" fw={600}>NGÂN HÀNG</Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr >
+              <Table.Td colSpan={2} align="left">
+                <Text fw={700}>{bankConfig?.bank_name}</Text>
+              </Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+
+        <Table striped highlightOnHover withTableBorder withColumnBorders >
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td colSpan={2} align="left">
+                <Text c="dimmed" fw={600}>SỐ TÀI KHOẢN</Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr >
+              <Table.Td colSpan={2} align="left">
+                <Group justify="space-between" pt="xs">
+                  <Text fw={700}>{bankConfig?.account_number}</Text>
+                  <Button
+                    onClick={() => clipboard.copy(bankConfig?.account_number)}
+                    variant="subtle"
+                    size="compact-xs"
+                    px={4}
+                  >
+                    <IconCopy size={16} />
+                  </Button>
+                </Group>
+              </Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+
+        <Table striped highlightOnHover withTableBorder withColumnBorders >
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td colSpan={2} align="left">
+                <Text c="dimmed" fw={600}>TÊN TÀI KHOẢN</Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr >
+              <Table.Td colSpan={2} align="left">
+                <Text fw={700}>{bankConfig?.account_name}</Text>
+              </Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+
+        <Table striped highlightOnHover withTableBorder withColumnBorders >
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td colSpan={2} align="left">
+                <Text c="dimmed" fw={600}>NỘI DUNG CHUYỂN KHOẢN</Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr >
+              <Table.Td colSpan={2} align="left">
+                <Group justify="space-between" pt="xs" wrap='nowrap'>
+                  <Text fw={700} c="red">{transactionId}</Text>
+                  <Button
+                    onClick={() => clipboard.copy(transactionId)}
+                    variant="subtle"
+                    size="compact-xs"
+                    px={4}
+                  >
+                    <IconCopy size={16} />
+                  </Button>
+                </Group>
+              </Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+
+        <Table striped highlightOnHover withTableBorder withColumnBorders >
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td colSpan={2} align="left">
+                <Text c="dimmed" fw={600}>SỐ TIỀN</Text>
+              </Table.Td>
+            </Table.Tr>
+            <Table.Tr >
+              <Table.Td colSpan={2} align="left">
+                <Text fw={700} c='red'>{transaction?.total_amount.toLocaleString('vi-VN')} VNĐ</Text>
+              </Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+      </Stack>
     </Container>
   );
 }

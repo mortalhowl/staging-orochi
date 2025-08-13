@@ -1,4 +1,4 @@
-import { Table, Checkbox, Badge, LoadingOverlay, UnstyledButton, Group, Center, rem, Text } from '@mantine/core';
+import { Table, Checkbox, Badge, LoadingOverlay, UnstyledButton, Group, Center, rem, Text, ScrollArea } from '@mantine/core';
 import { IconSelector, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { Event, Sorting } from '../../../types';
 import {formatDate} from '../../../utils/formatters'
@@ -68,7 +68,8 @@ export function EventsTable({ events, loading, selection, setSelection, onRowCli
 return (
     <div style={{ position: 'relative' }}>
       <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
-      <Table striped highlightOnHover withTableBorder withColumnBorders miw={800}>
+      <ScrollArea>
+      <Table striped highlightOnHover withTableBorder miw={800}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th style={{ width: 40 }}>
@@ -102,6 +103,7 @@ return (
           )}
         </Table.Tbody>
       </Table>
+      </ScrollArea>
     </div>
   );
 }

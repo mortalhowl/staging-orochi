@@ -25,7 +25,14 @@ export function ArticleGrid({ articles }: ArticleGridProps) {
               <Card.Section>
                 <Image src={article.image_url} height="auto" alt={article.title} />
               </Card.Section>
-              <Text fw="bold" mt="md" mb="xs" truncate="end" c="#008a87">{article.title}</Text>
+              <Text fw="bold" mt="md" mb="xs" truncate="end"
+              style={{
+                              fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+              color: '#008a87',
+              fontSize: '1rem',
+              fontWeight: 700,
+              }}
+              >{article.title}</Text>
               <Text size="sm" c="dimmed" lineClamp={2}>
                 {article.content?.replace(/<[^>]+>/g, '')}
               </Text>

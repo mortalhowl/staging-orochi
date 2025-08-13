@@ -1,4 +1,4 @@
-import { Table, Checkbox, LoadingOverlay, Text, Tooltip, Badge } from '@mantine/core';
+import { Table, Checkbox, LoadingOverlay, Text, Tooltip, Badge, ScrollArea } from '@mantine/core';
 import type { Article } from '../../../types';
 import { formatDate } from '../../../utils/formatters';
 
@@ -37,16 +37,17 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
             <Table.Td onClick={() => onRowClick(article.id)}>{article.events?.title || 'Không có'}</Table.Td>
             <Table.Td onClick={() => onRowClick(article.id)}>{formatDate(article.created_at)}</Table.Td>
             <Table.Td>
-        <Badge color={article.status === 'public' ? 'green' : 'gray'}>
-          {article.status === 'public' ? 'Công khai' : 'Ẩn'}
-        </Badge>
-      </Table.Td>
+                <Badge color={article.status === 'public' ? 'green' : 'gray'}>
+                    {article.status === 'public' ? 'Công khai' : 'Ẩn'}
+                </Badge>
+            </Table.Td>
         </Table.Tr>
     ));
 
     return (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', height: 'calc(80vh - 200px)'}}>
             <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
+            <ScrollArea>
             <Table striped highlightOnHover withTableBorder>
                 <Table.Thead>
                     <Table.Tr>
@@ -77,6 +78,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
                     )}
                 </Table.Tbody>
             </Table>
+            </ScrollArea>
         </div>
     );
 }

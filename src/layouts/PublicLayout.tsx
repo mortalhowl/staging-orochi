@@ -66,7 +66,10 @@ export function PublicLayout() {
                 fw={900} // Đậm nhất
                 fz="xl" // Chữ to
                 style={{
-                  fontFamily: "'Poppins', sans-serif", // Font nổi bật
+                  fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+                  color: '#008a87',
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
                 }}
                 c="#008a87"
               >
@@ -102,14 +105,14 @@ export function PublicLayout() {
               </Menu.Dropdown>
             </Menu>
           ) : (
-            <Button onClick={handleGoogleLogin} leftSection={<IconBrandGoogle size={18} />} variant="default">
+            <Button onClick={handleGoogleLogin} variant="default" px="xs">
               Đăng nhập
             </Button>
           )}
         </Group>
       </AppShell.Header>
 
-      <AppShell.Main pt={60}>
+      <AppShell.Main pt={60} px="xs">
         <Outlet />
       </AppShell.Main>
 

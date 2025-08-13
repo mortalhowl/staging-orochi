@@ -62,16 +62,42 @@ export function ArticleDetailPage() {
 
   return (
     <Container size="md" my="xl">
-      <Paper withBorder p="xl" radius="md">
-        <Breadcrumbs mb="xl">{breadcrumbs}</Breadcrumbs>
-        <Title order={1}>{article.title}</Title>
+      <Paper>
+        {/* <Breadcrumbs mb="xl">{breadcrumbs}</Breadcrumbs> */}
+        <Title order={1}
+          style={{
+            fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+            color: '#008a87',
+            fontSize: '2rem',
+            fontWeight: 700,
+          }}>{article.title}</Title>
         <Text c="dimmed" size="sm" my="md">
           Đăng ngày: {formatDateTime(article.created_at)}
           {article.events && (
             <> | Thuộc sự kiện: <Anchor component={Link} to={`/events/${article.events.slug}`}>{article.events.title}</Anchor></>
           )}
         </Text>
-        <Image src={article.image_url} radius="md" mb="xl" />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            margin: '16px 0'
+          }}
+        >
+          <Image
+            src={article.image_url}
+            radius="md"
+            style={{
+              maxHeight: '350px',
+              maxWidth: '100%',
+              height: 'auto',
+              width: 'auto',
+              objectFit: 'contain' // giữ nguyên tỉ lệ, không cắt
+            }}
+          />
+        </div>
+
         <div dangerouslySetInnerHTML={{ __html: article.content }} />
       </Paper>
     </Container>

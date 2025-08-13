@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Group, Title, LoadingOverlay, Text, ActionIcon, Tooltip, Badge } from '@mantine/core';
+import { Table, Button, Group, Title, LoadingOverlay, Text, ActionIcon, Tooltip, Badge, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import { supabase } from '../../../services/supabaseClient';
@@ -21,7 +21,7 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [editingTicket, setEditingTicket] = useState<TicketType | null>(null);
 
-    const fetchTicketTypes = async () => {
+  const fetchTicketTypes = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('ticket_types').select('*').eq('event_id', eventId);
     if (error) console.error('Error fetching ticket types');
@@ -33,7 +33,7 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
   const handleAddNew = () => { setEditingTicket(null); openModal(); };
   const handleEdit = (ticket: TicketType) => { setEditingTicket(ticket); openModal(); };
   const handleCloseModal = () => { setEditingTicket(null); closeModal(); };
-  
+
   const handleDelete = (ticket: TicketType) => {
     modals.openConfirmModal({
       title: 'Xác nhận xóa',
@@ -57,7 +57,7 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
       <Table.Td>{item.quantity_sold} / {item.quantity_total === null ? '∞' : item.quantity_total}</Table.Td>
       <Table.Td><Badge color={statusMapping[item.status].color}>{statusMapping[item.status].label}</Badge></Table.Td>
       <Table.Td>
-        <Group gap="xs">
+        <Group gap="xs" wrap='nowrap'>
           <ActionIcon variant="subtle" onClick={() => handleEdit(item)}><IconPencil size={16} /></ActionIcon>
           <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(item)}><IconTrash size={16} /></ActionIcon>
         </Group>
@@ -69,16 +69,24 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
     <>
       <Group justify="space-between" mb="md">
         <Title order={4}>Các loại vé</Title>
-        <Button onClick={handleAddNew} size="xs" leftSection={<IconPlus size={16} />}>Thêm loại vé</Button>
+        <Button onClick={handleAddNew} size="xs" leftSection={<IconPlus size={16} />} style={{ background: '#008a87' }}>Thêm</Button>
       </Group>
       <div style={{ position: 'relative' }}>
         <LoadingOverlay visible={loading} />
-        <Table>
-          <Table.Thead>
-            <Table.Tr><Table.Th>Tên vé</Table.Th><Table.Th>Giá</Table.Th><Table.Th>Đã bán/SL</Table.Th><Table.Th>Trạng thái</Table.Th><Table.Th></Table.Th></Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={5} align="center"><Text>Chưa có loại vé nào</Text></Table.Td></Table.Tr>}</Table.Tbody>
-        </Table>
+        <ScrollArea>
+          <Table striped highlightOnHover withTableBorder miw={400}>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Tên vé</Table.Th>
+                <Table.Th>Giá</Table.Th>
+                <Table.Th>Đã bán/SL</Table.Th>
+                <Table.Th>Trạng thái</Table.Th>
+                <Table.Th>Hành động</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={5} align="center"><Text>Chưa có loại vé nào</Text></Table.Td></Table.Tr>}</Table.Tbody>
+          </Table>
+        </ScrollArea>
       </div>
       <TicketTypeFormModal opened={modalOpened} onClose={handleCloseModal} onSuccess={fetchTicketTypes} eventId={eventId} ticketTypeToEdit={editingTicket} />
     </>

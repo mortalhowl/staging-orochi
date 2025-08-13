@@ -4,6 +4,7 @@ import { supabase } from '../../../services/supabaseClient';
 import { useAuthStore } from '../../../store/authStore';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '../../../utils/formatters';
+import { IconSend } from '@tabler/icons-react';
 
 interface TransactionNotesProps {
   transactionId: string;
@@ -52,7 +53,7 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     setSubmitting(true);
-    
+
     const { error } = await supabase.from('transaction_notes').insert({
       transaction_id: transactionId,
       user_id: userProfile?.id,
@@ -87,17 +88,33 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
         {notes.length === 0 && <Text c="dimmed" ta="center">Chưa có ghi chú nào.</Text>}
       </Stack>
 
-      <Stack mt="md">
+      <Group mt="md" gap="xs" align="flex-start" wrap="nowrap" style={{ width: '100%' }}>
         <Textarea
           placeholder="Nhập ghi chú nội bộ..."
           value={newNote}
           onChange={(e) => setNewNote(e.currentTarget.value)}
-          minRows={3}
+          minRows={1}
+          autosize
+          w="100%"
+          radius="sm"
+          styles={{
+            input: { fontSize: 14 },
+          }}
         />
-        <Button onClick={handleAddNote} loading={submitting} style={{ alignSelf: 'flex-end' }}>
-          Thêm ghi chú
+        <Button
+          onClick={handleAddNote}
+          loading={submitting}
+          radius="sm"
+          px="sm"
+          style={{
+            alignSelf: 'stretch', // cao bằng Textarea
+            backgroundColor: '#228be6',
+          }}
+        >
+          <IconSend size={18} />
         </Button>
-      </Stack>
+      </Group>
+
     </Stack>
   );
 }

@@ -15,7 +15,7 @@ function EventSlide({ event }: { event: Event }) {
           <Box
             style={{
               borderRadius: '1.3rem',
-              padding: '4px',
+              // padding: '4px',
               background: 'linear-gradient(45deg, #088e8b, #A0E9FF, #FFB5E8)',
             }}
           >
@@ -31,17 +31,17 @@ function EventSlide({ event }: { event: Event }) {
             style={{ backgroundColor: '#f8f9fa' }}
           /> */}
         </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 4 }} p="xl" style={{
+        <Grid.Col span={{ base: 12, md: 4 }} style={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          <Title order={1} c="#008a87" mb="md" 
-          style={{ 
-            fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-            fontSize: '2rem',
-            fontWeight: 700 
-          }}>
+          <Title order={1} c="#008a87" mb="md"
+            style={{
+              fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+              fontSize: '2rem',
+              fontWeight: 700
+            }}>
             {event.title.toUpperCase()}
           </Title>
           <Text lineClamp={5} mb="xl">
@@ -78,14 +78,16 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
           {article.events.title}
         </Badge>
       )}
-      <Title order={2} c="#008a87" mb="md" fw="bold"
-      style={{ 
+      <Link to={`/articles/${article.slug}`} style={{ textDecoration: 'none' }}>
+        <Title order={2} c="#008a87" mb="md" fw="bold"
+          style={{
             fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
             fontSize: '1.7rem',
-            fontWeight: 700 
+            fontWeight: 700
           }}>
-        {article.title?.toUpperCase()}
-      </Title>
+          {article.title?.toUpperCase()}
+        </Title>
+      </Link>
       <Text lineClamp={5}>
         {article.content?.replace(/<[^>]+>/g, '')}
       </Text>
@@ -93,7 +95,6 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
   );
 
   const image = (
-
     <Box
       style={{
         borderRadius: '1.3rem',
@@ -101,12 +102,13 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
         background: 'linear-gradient(45deg, #088e8b, #A0E9FF, #FFB5E8)',
       }}
     >
-      <Image
-        src={article.image_url || '/placeholder-image.jpg'}
-        radius="lg"
-      />
+      <Link to={`/articles/${article.slug}`}>
+        <Image
+          src={article.image_url || '/placeholder-image.jpg'}
+          radius="lg"
+        />
+      </Link>
     </Box>
-
     // <Image 
     //   src={article.image_url || '/placeholder-image.jpg'} 
     //   radius="md"
@@ -208,10 +210,7 @@ export function HomePage() {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: '#008a87',
-              '&[data-active]': {
-                backgroundColor: '#005f5f', // màu khi active
-              },
+              backgroundColor: '#ccc',
             },
           }}
         >
@@ -237,7 +236,7 @@ export function HomePage() {
               fontWeight: 700,
             }}
           >
-            Khách mời & Tin tức
+            Tin tức
           </Title>
           {articles.map((article, index) => (
             <ArticleRow

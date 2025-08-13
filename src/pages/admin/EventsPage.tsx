@@ -84,9 +84,9 @@ export function EventsPage() {
   return (
     <>
       <Group justify="space-between" mb="lg">
-        <Title order={2}>Quản lý Sự kiện</Title>
+        <Title order={2}>Sự kiện</Title>
         <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>
-          Thêm sự kiện
+          Thêm
         </Button>
       </Group>
 

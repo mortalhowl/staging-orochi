@@ -1,4 +1,4 @@
-import { Drawer, LoadingOverlay, Title, Text, Image, Stack, Group, Button, Divider, Paper } from '@mantine/core';
+import { Drawer, LoadingOverlay, Title, Text, Image, Stack, Group, Button, Divider, Paper, Badge } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { Article } from '../../../types';
 import { supabase } from '../../../services/supabaseClient';
@@ -60,13 +60,45 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
         {article && (
           <Stack justify="space-between" h="100%">
             <Stack>
-              <Image radius="md" src={article.image_url || undefined} alt="Ảnh bìa" height={200} fallbackSrc="https://via.placeholder.com/400x200?text=No+Image" />
-              <Title order={3}>{article.title}</Title>
-              <Text c="dimmed">Sự kiện: {article.events?.title || 'Không có'}</Text>
-              <Divider my="sm" />
-              <Paper withBorder p="md" radius="sm" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
-                <div dangerouslySetInnerHTML={{ __html: article.content }} />
-              </Paper>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  margin: '16px 0'
+                }}
+              >
+                <Image
+                  src={article.image_url}
+                  radius="md"
+                  style={{
+                    maxHeight: '350px',
+                    maxWidth: '100%',
+                    height: 'auto',
+                    width: 'auto',
+                    objectFit: 'contain' // giữ nguyên tỉ lệ, không cắt
+                  }}
+                />
+              </div>
+
+              <Group>
+                <Title order={3}
+                  style={{
+                    fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+                    color: '#008a87',
+                    fontSize: '1.5rem',
+                    fontWeight: 700,
+                  }}>{article.title}</Title>
+                <Badge color={article.status === 'public' ? 'green' : 'gray'}>
+                  {article.status === 'public' ? 'Công khai' : 'Ẩn'}
+                </Badge>
+              </Group>
+              <div style={{ marginBottom: 16 }}>
+                <Text size="sm" c="dimmed">
+                  Ngày tạo: {new Date(article.created_at).toLocaleDateString('vi-VN')} | Sự kiện: {article.events?.title || 'Không có'}
+                </Text>
+                <Text size="sl" my="0px" dangerouslySetInnerHTML={{ __html: article.content }} />
+              </div>
             </Stack>
             <Group grow>
               <Button variant="default" onClick={() => onEdit(article)}>Sửa bài viết</Button>
