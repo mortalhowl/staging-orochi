@@ -1,6 +1,6 @@
 import { Paper, TextInput, Button, Stack, Title, LoadingOverlay } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { RichTextEditor, Link } from '@mantine/tiptap';
+import { RichTextEditor } from '@mantine/tiptap';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState } from 'react';

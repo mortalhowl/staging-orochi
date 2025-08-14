@@ -10,7 +10,6 @@ import {
   Text,
   rem,
   useMantineColorScheme,
-  Title,
   Transition,
   Drawer,
   Image,

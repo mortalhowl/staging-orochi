@@ -1,4 +1,4 @@
-import { Drawer, LoadingOverlay, Title, Tabs, rem } from '@mantine/core';
+import { Drawer, LoadingOverlay, Tabs, rem } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { Event } from '../../../types';
 import { supabase } from '../../../services/supabaseClient';

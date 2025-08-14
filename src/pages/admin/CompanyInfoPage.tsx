@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Paper, Title, TextInput, Button, Stack, Textarea, Tabs, FileInput, Image, rem, Divider, Text } from '@mantine/core';
+import { Paper, Title, TextInput, Button, Stack, Textarea, Tabs, FileInput, Image, rem, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { supabase } from '../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';

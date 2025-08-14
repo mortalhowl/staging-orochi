@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type {ReactNode} from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { supabase } from '../../services/supabaseClient';
 import { Center, Loader } from '@mantine/core';

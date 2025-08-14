@@ -7,7 +7,7 @@ import type { Article, ArticleStatus } from '../../../types';
 import { RichTextEditor, Link } from '@mantine/tiptap';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { IconCheck, IconX, IconPhoto, IconLink } from '@tabler/icons-react';
+import { IconPhoto, IconLink } from '@tabler/icons-react';
 import slugify from 'slugify';
 
 interface ArticleFormModalProps {

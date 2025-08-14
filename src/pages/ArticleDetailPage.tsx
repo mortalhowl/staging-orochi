@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import type { Article } from '../types';
-import { Container, Loader, Center, Alert, Image, Title, Text, Paper, Breadcrumbs, Anchor } from '@mantine/core';
+import { Container, Loader, Center, Alert, Image, Title, Text, Paper, Anchor } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { formatDateTime } from '../utils/formatters';
 
@@ -49,16 +49,6 @@ export function ArticleDetailPage() {
   }
 
   if (!article) return null;
-
-  const breadcrumbs = [
-    { title: 'Trang chủ', href: '/' },
-    { title: 'Tin tức', href: '#' }, // Có thể tạo trang danh sách tin tức sau
-    { title: article.title, href: `/articles/${article.slug}` }
-  ].map((item, index) => (
-    <Anchor component={Link} to={item.href} key={index}>
-      {item.title}
-    </Anchor>
-  ));
 
   return (
     <Container size="md" my="xl">

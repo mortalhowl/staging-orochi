@@ -1,4 +1,4 @@
-import { Drawer, LoadingOverlay, Title, Text, Image, Stack, Group, Button, Divider, Paper, Badge } from '@mantine/core';
+import { Drawer, LoadingOverlay, Title, Text, Image, Stack, Group, Button, Badge } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { Article } from '../../../types';
 import { supabase } from '../../../services/supabaseClient';

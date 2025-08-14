@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SimpleGrid, Paper, Text, Group, Stack, Center, Loader } from '@mantine/core';
+import { SimpleGrid, Paper, Text, Stack, Center, Loader } from '@mantine/core';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';

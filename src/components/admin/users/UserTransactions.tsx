@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Loader, Center, Text, Badge } from '@mantine/core';
+import { Table, Loader, Center, Badge } from '@mantine/core';
 import { supabase } from '../../../services/supabaseClient';
 import { formatDateTime } from '../../../utils/formatters';
 

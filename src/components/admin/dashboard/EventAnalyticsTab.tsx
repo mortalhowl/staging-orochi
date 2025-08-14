@@ -29,7 +29,7 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
       const endDate = new Date(dateRange[1]);
       endDate.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase.rpc('get_event_analytics', {
+      const { data } = await supabase.rpc('get_event_analytics', {
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
       });

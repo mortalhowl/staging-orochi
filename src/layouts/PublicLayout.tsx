@@ -1,15 +1,13 @@
-import { AppShell, Burger, Button, Group, Text, Menu, Avatar, rem, Image } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image } from '@mantine/core';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
-import { IconLogout, IconTicket, IconBrandGoogle } from '@tabler/icons-react';
+import { IconLogout, IconTicket } from '@tabler/icons-react';
 import type { UserProfile } from '../types';
 import { Footer } from '../components/public/Footer';
 
 export function PublicLayout() {
-  const [opened, { toggle }] = useDisclosure();
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
