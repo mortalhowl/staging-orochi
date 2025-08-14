@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware'; // 1. Import persist
-import type { EventWithDetails, TicketType } from '../types';
+import type { EventWithDetails } from '../types';
 
 interface CartState {
   event: EventWithDetails | null;

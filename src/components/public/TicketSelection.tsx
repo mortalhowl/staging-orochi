@@ -12,7 +12,7 @@ interface TicketSelectionProps {
 const MAX_TICKETS_PER_TYPE = 10;
 
 export function TicketSelection({ event }: TicketSelectionProps) {
-  const { ticket_types: ticketTypes, sale_start_time, sale_end_time } = event;
+  const { sale_start_time, sale_end_time } = event;
   const navigate = useNavigate();
   // 3. Lấy state và actions từ "kho" toàn cục
   const { cart, totalAmount, totalTickets, setEvent, updateCart } = useCartStore();
@@ -62,7 +62,6 @@ export function TicketSelection({ event }: TicketSelectionProps) {
   // useEffect để kiểm tra và điều chỉnh giá trị vẫn hoạt động,
   // nhưng giờ nó sẽ theo dõi `cart` từ store
   useEffect(() => {
-    let hasChanges = false;
     Object.entries(cart).forEach(([ticketId, quantity]) => {
       const ticket = event.ticket_types.find(t => t.id === ticketId);
       if (!ticket) return;
@@ -71,7 +70,6 @@ export function TicketSelection({ event }: TicketSelectionProps) {
       const maxAllowed = Math.min(MAX_TICKETS_PER_TYPE, remaining);
 
       if (quantity > maxAllowed) {
-        hasChanges = true;
         updateCart(ticketId, maxAllowed); // Cập nhật lại giá trị trong store
         
         notifications.show({

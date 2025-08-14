@@ -95,7 +95,7 @@ export function IssuedTicketsPage() {
       setLoading(false);
     };
     fetchPageData();
-  }, [activePage, debouncedSearch, filters.eventId, filters.isInvite, filters.isUsed]);
+  }, [activePage, refreshKey, debouncedSearch, filters.eventId, filters.isInvite, filters.isUsed]);
 
   const handleRowClick = (ticketId: string) => {
     setSelectedTicketId(ticketId);
