@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { Container, Loader, Center, Alert, Paper, Title, Text, Stack, Image, Button, Group, Table } from '@mantine/core';
+import { Container, Loader, Center, Alert, Paper, Text, Stack, Image, Button, Group, Table } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { IconAlertCircle, IconCopy, IconDownload, IconInfoCircle } from '@tabler/icons-react';
 
