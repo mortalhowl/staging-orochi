@@ -1,10 +1,11 @@
-import { Drawer, LoadingOverlay, Title, Text, Stack, Group, Button, Divider, Alert, Table, Tabs } from '@mantine/core';
+import { Drawer, LoadingOverlay, Text, Stack, Group, Button, Divider, Alert, Table, Tabs, Title, ActionIcon, Tooltip } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { TransactionNotes } from './TransactionNotes';
-import { IconTicket, IconNotes } from '@tabler/icons-react';
+import { IconTicket, IconNotes, IconCopy } from '@tabler/icons-react';
+import {useClipboard} from '@mantine/hooks';
 
 // Định nghĩa lại props cho Drawer
 interface TransactionDetailDrawerProps {
@@ -33,6 +34,7 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
   const [items, setItems] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const clipboard = useClipboard();
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -143,15 +145,21 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
 
 
   return (
-    <Drawer opened={opened} onClose={onClose} title="Chi tiết Đơn hàng" position="right" size="md">
+    <Drawer opened={opened} onClose={onClose} title={<Title order={4}>Chi tiết Đơn hàng</Title>} position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>
         <LoadingOverlay visible={loading} />
         {error && <Alert color="red">{error}</Alert>}
         {transaction && (
           <Stack justify="space-between" h="100%">
             <Stack>
-              <Title order={4}>Chi tiết Đơn hàng</Title>
-              <Text size="sm"><b>Mã ĐH:</b> {transaction.id}</Text>
+              <Group gap="xs" wrap="nowrap">
+                <Text size="sm"><b>Mã ĐH:</b> {transaction.id}</Text>
+                <Tooltip label="Sao chép Mã ĐH">
+                  <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(transaction.id); }}>
+                    <IconCopy size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
               <Text size="sm"><b>Khách hàng:</b> {transaction.users?.full_name || transaction.users?.email}</Text>
               <Text size="sm"><b>Sự kiện:</b> {transaction.events?.title}</Text>
               <Tabs defaultValue="tickets">

@@ -164,7 +164,7 @@ export function TransactionsPage() {
   return (
     <>
       <Group justify="space-between" mb="xl">
-        <Title order={2}>Quản lý Đơn hàng</Title>
+        <Title order={2}>Đơn hàng</Title>
         <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16} />}>
           Xuất Excel
         </Button>

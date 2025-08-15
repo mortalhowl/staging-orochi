@@ -15,6 +15,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
         <Table.Tr
             key={article.id}
             bg={selection.includes(article.id) ? 'var(--mantine-color-blue-light)' : undefined}
+            style={{ cursor: 'pointer' }}
         >
             <Table.Td onClick={(e) => e.stopPropagation()}>
                 <Checkbox

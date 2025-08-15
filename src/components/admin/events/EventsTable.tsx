@@ -71,7 +71,7 @@ return (
       <ScrollArea>
       <Table striped highlightOnHover withTableBorder miw={800}>
         <Table.Thead>
-          <Table.Tr>
+          <Table.Tr >
             <Table.Th style={{ width: 40 }}>
               <Checkbox
                 onChange={(e) =>

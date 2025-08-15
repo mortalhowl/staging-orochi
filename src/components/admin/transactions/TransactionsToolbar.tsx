@@ -55,8 +55,8 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
         data={[
           { value: 'pending', label: 'Chờ xác nhận' },
           { value: 'paid', label: 'Đã thanh toán' },
-          { value: 'failed', label: 'Thất bại' },
-          { value: 'expired', label: 'Hết hạn' },
+          // { value: 'failed', label: 'Thất bại' },
+          // { value: 'expired', label: 'Hết hạn' },
         ]}
         value={filters.status}
         onChange={(value) => handleFilterChange('status', value)}
