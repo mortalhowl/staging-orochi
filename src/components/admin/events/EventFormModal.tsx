@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabaseClient';
 import type { Event } from '../../../types';
 import slugify from 'slugify';
-import { RichTextEditor, Link } from '@mantine/tiptap';
+import { RichTextEditor } from '@mantine/tiptap';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useMantineColorScheme } from '@mantine/core';
