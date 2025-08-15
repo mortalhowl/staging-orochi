@@ -45,39 +45,39 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
     ));
 
     return (
-        <div style={{ position: 'relative', height: 'calc(80vh - 200px)'}}>
+        <div style={{ position: 'relative', height: 'calc(80vh - 200px)' }}>
             <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
             <ScrollArea>
-            <Table striped highlightOnHover withTableBorder>
-                <Table.Thead>
-                    <Table.Tr>
-                        <Table.Th style={{ width: 40 }}>
-                            <Checkbox
-                                onChange={(e) =>
-                                    setSelection(e.currentTarget.checked ? articles.map((item) => item.id) : [])
-                                }
-                                checked={selection.length > 0 && selection.length === articles.length}
-                                indeterminate={selection.length > 0 && selection.length !== articles.length}
-                            />
-                        </Table.Th>
-                        <Table.Th>Tên bài viết</Table.Th>
-                        <Table.Th>Sự kiện liên quan</Table.Th>
-                        <Table.Th>Ngày tạo</Table.Th>
-                        <Table.Th>Trạng thái</Table.Th>
-                    </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                    {rows.length > 0 ? (
-                        rows
-                    ) : (
+                <Table striped highlightOnHover withTableBorder miw={800}>
+                    <Table.Thead>
                         <Table.Tr>
-                            <Table.Td colSpan={5} align="center">
-                                Không có bài viết nào
-                            </Table.Td>
+                            <Table.Th style={{ width: 40 }}>
+                                <Checkbox
+                                    onChange={(e) =>
+                                        setSelection(e.currentTarget.checked ? articles.map((item) => item.id) : [])
+                                    }
+                                    checked={selection.length > 0 && selection.length === articles.length}
+                                    indeterminate={selection.length > 0 && selection.length !== articles.length}
+                                />
+                            </Table.Th>
+                            <Table.Th>Tên bài viết</Table.Th>
+                            <Table.Th>Sự kiện liên quan</Table.Th>
+                            <Table.Th>Ngày tạo</Table.Th>
+                            <Table.Th>Trạng thái</Table.Th>
                         </Table.Tr>
-                    )}
-                </Table.Tbody>
-            </Table>
+                    </Table.Thead>
+                    <Table.Tbody>
+                        {rows.length > 0 ? (
+                            rows
+                        ) : (
+                            <Table.Tr>
+                                <Table.Td colSpan={5} align="center">
+                                    Không có bài viết nào
+                                </Table.Td>
+                            </Table.Tr>
+                        )}
+                    </Table.Tbody>
+                </Table>
             </ScrollArea>
         </div>
     );

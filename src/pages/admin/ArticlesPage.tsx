@@ -100,8 +100,8 @@ export function ArticlesPage() {
   return (
     <>
       <Group justify="space-between" mb="lg">
-        <Title order={2}>Quản lý Bài viết</Title>
-        <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>Thêm bài viết mới</Button>
+        <Title order={2}>Bài viết</Title>
+        <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>Thêm</Button>
       </Group>
 
       <Paper withBorder p="md" radius="md">

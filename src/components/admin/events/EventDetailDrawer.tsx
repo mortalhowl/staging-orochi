@@ -40,7 +40,7 @@ export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit,
   }, [eventId, refreshKey, opened]);
 
   return (
-    <Drawer opened={opened} onClose={onClose} title="Chi tiết" position="right" size="lg">
+    <Drawer opened={opened} onClose={onClose} title="Chi tiết" position="right" size="md">
       <LoadingOverlay visible={loading} />
       {event && (
         <Tabs defaultValue="details">
@@ -49,7 +49,7 @@ export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit,
               Chi tiết
             </Tabs.Tab>
             <Tabs.Tab value="tickets" leftSection={<IconTicket style={{ width: rem(16), height: rem(16) }} />}>
-              Các loại vé
+              Loại vé
             </Tabs.Tab>
           </Tabs.List>
 

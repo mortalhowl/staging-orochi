@@ -1,4 +1,4 @@
-import { Modal, Button, Stack, TextInput, Textarea, Switch, Tabs, FileInput, Image, rem, Divider } from '@mantine/core';
+import { Modal, Button, Stack, TextInput, Switch, Tabs, FileInput, Image, Divider, Group, Text, Box } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -7,6 +7,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabaseClient';
 import type { Event } from '../../../types';
 import slugify from 'slugify';
+import { RichTextEditor, Link } from '@mantine/tiptap';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useMantineColorScheme } from '@mantine/core';
 
 // 1. Cập nhật interface cho form để bao gồm thời gian bán vé
 interface EventFormValues {
@@ -66,6 +70,34 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
     },
   });
 
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: '',
+  });
+
+  useEffect(() => {
+    if (eventToEdit && opened) {
+      form.setValues({
+        title: eventToEdit.title,
+        location: eventToEdit.location || '',
+        start_time: eventToEdit.start_time ? new Date(eventToEdit.start_time) : null,
+        end_time: eventToEdit.end_time ? new Date(eventToEdit.end_time) : null,
+        sale_start_time: eventToEdit.sale_start_time ? new Date(eventToEdit.sale_start_time) : null,
+        sale_end_time: eventToEdit.sale_end_time ? new Date(eventToEdit.sale_end_time) : null,
+        cover_image_url: eventToEdit.cover_image_url || '',
+        is_active: eventToEdit.is_active,
+      });
+      // 3. Điền nội dung vào editor
+      editor?.commands.setContent(eventToEdit.description || '');
+      setImagePreview(eventToEdit.cover_image_url);
+    } else {
+      form.reset();
+      editor?.commands.clearContent();
+      setCoverFile(null);
+      setImagePreview(null);
+    }
+  }, [eventToEdit, opened]);
+
   useEffect(() => {
     if (eventToEdit && opened) {
       form.setValues({
@@ -119,6 +151,7 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
 
   const handleSubmit = async (values: EventFormValues) => {
     setLoading(true);
+    const description = editor?.getHTML() || '';
     try {
       let finalCoverImageUrl = values.cover_image_url;
 
@@ -154,8 +187,9 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
         finalSlug = `${baseSlug}-${Date.now().toString().slice(-6)}`;
       }
 
-const submissionData = {
+      const submissionData = {
         ...values,
+        description,
         slug: finalSlug,
         cover_image_url: finalCoverImageUrl,
         start_time: values.start_time ? new Date(values.start_time).toISOString() : null,
@@ -184,51 +218,184 @@ const submissionData = {
     }
   };
 
- return (
-    <Modal opened={opened} onClose={onClose} title={isEditing ? 'Cập nhật sự kiện' : 'Tạo sự kiện mới'} centered size="lg">
+  return (
+    <Modal
+      opened={opened}
+      onClose={() => { }}
+      withCloseButton={false}
+      title={<Text fw={600} style={{ flex: 1 }}>{isEditing ? 'Sửa sự kiện' : 'Tạo sự kiện mới'}</Text>}
+      centered
+      size="lg"
+    >
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack>
-          <TextInput required label="Tên sự kiện" placeholder="Nhập tên sự kiện..." {...form.getInputProps('title')} />
-          <Textarea label="Mô tả" placeholder="Nhập mô tả..." {...form.getInputProps('description')} />
-          <TextInput label="Địa điểm" placeholder="Nhập địa điểm..." {...form.getInputProps('location')} />
-          
-          <Divider label="Thời gian diễn ra" labelPosition="center" my="sm" />
-          <DateTimePicker required label="Bắt đầu" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('start_time')} />
-          <DateTimePicker required label="Kết thúc" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('end_time')} />
+        <Stack >
 
-          {/* 3. THÊM CÁC TRƯỜNG NHẬP LIỆU MỚI */}
-          <Divider label="Thời gian mở bán vé" labelPosition="center" my="sm" />
-          <DateTimePicker label="Bắt đầu bán vé" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('sale_start_time')} />
-          <DateTimePicker label="Kết thúc bán vé" placeholder="Chọn ngày giờ" valueFormat="DD/MM/YYYY HH:mm" {...form.getInputProps('sale_end_time')} />
+          {/* Tiêu đề & trạng thái */}
+          <Group align="center">
+            <TextInput
+              required
+              label="Tên sự kiện"
+              placeholder="Nhập tên sự kiện..."
+              style={{ flex: 3 }} // 3 phần -> 75%
+              {...form.getInputProps('title')}
+            />
+            <Switch
+              label="Kích hoạt"
+              style={{ flex: 1 }} // 1 phần -> 25%
+              {...form.getInputProps('is_active', { type: 'checkbox' })}
+            />
+          </Group>
 
-          <Divider my="sm" />
-          
-          <Tabs defaultValue="upload">
+
+          {/* Mô tả & địa điểm */}
+          <Stack gap={4} mt="sm">
+            <Text component="label" fw={500} fz="sm">Mô tả</Text>
+            <RichTextEditor editor={editor}>
+              <RichTextEditor.Toolbar sticky stickyOffset={60}>
+                <RichTextEditor.ControlsGroup>
+                  <RichTextEditor.Bold />
+                  <RichTextEditor.Italic />
+                  <RichTextEditor.Underline />
+                </RichTextEditor.ControlsGroup>
+                <RichTextEditor.ControlsGroup>
+                  <RichTextEditor.H1 />
+                  <RichTextEditor.H2 />
+                  <RichTextEditor.H3 />
+                </RichTextEditor.ControlsGroup>
+                <RichTextEditor.ControlsGroup>
+                  <RichTextEditor.BulletList />
+                  <RichTextEditor.OrderedList />
+                </RichTextEditor.ControlsGroup>
+                <RichTextEditor.ControlsGroup>
+                  <RichTextEditor.Link />
+                  <RichTextEditor.Unlink />
+                </RichTextEditor.ControlsGroup>
+              </RichTextEditor.Toolbar>
+              <RichTextEditor.Content mih={200} />
+            </RichTextEditor>
+          </Stack>
+          <TextInput
+            label="Địa điểm"
+            placeholder="Nhập địa điểm..."
+            {...form.getInputProps('location')}
+          />
+
+          {/* Thời gian diễn ra */}
+          <Divider label="Thời gian diễn ra" labelPosition="center" />
+          <Group grow>
+            <DateTimePicker
+              required
+              label="Bắt đầu"
+              placeholder="Chọn ngày giờ"
+              valueFormat="DD/MM/YYYY HH:mm"
+              {...form.getInputProps('start_time')}
+            />
+            <DateTimePicker
+              required
+              label="Kết thúc"
+              placeholder="Chọn ngày giờ"
+              valueFormat="DD/MM/YYYY HH:mm"
+              {...form.getInputProps('end_time')}
+            />
+          </Group>
+
+          {/* Thời gian mở bán vé */}
+          <Divider label="Thời gian mở bán vé" labelPosition="center" />
+          <Group grow>
+            <DateTimePicker
+              label="Bắt đầu bán vé"
+              placeholder="Chọn ngày giờ"
+              valueFormat="DD/MM/YYYY HH:mm"
+              {...form.getInputProps('sale_start_time')}
+            />
+            <DateTimePicker
+              label="Kết thúc bán vé"
+              placeholder="Chọn ngày giờ"
+              valueFormat="DD/MM/YYYY HH:mm"
+              {...form.getInputProps('sale_end_time')}
+            />
+          </Group>
+
+          {/* Ảnh bìa */}
+          <Divider label="Ảnh bìa sự kiện" labelPosition="center" />
+          <Tabs defaultValue="upload" variant="pills" radius="md">
             <Tabs.List>
-              <Tabs.Tab value="upload" leftSection={<IconPhoto style={{ width: rem(16), height: rem(16) }} />}>
+              <Tabs.Tab
+                value="upload"
+                leftSection={<IconPhoto size={16} />}
+              >
                 Tải lên ảnh
               </Tabs.Tab>
-              <Tabs.Tab value="url" leftSection={<IconLink style={{ width: rem(16), height: rem(16) }} />}>
+              <Tabs.Tab
+                value="url"
+                leftSection={<IconLink size={16} />}
+              >
                 Dùng link URL
               </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="upload" pt="xs">
-              <FileInput label="Ảnh bìa" placeholder="Chọn file ảnh" accept="image/png,image/jpeg" onChange={setCoverFile} />
-              {imagePreview && <Image src={imagePreview} mt="sm" radius="md" h={200} fit="contain" />}
+              <FileInput
+                label="Chọn ảnh bìa"
+                placeholder="Chọn file ảnh"
+                accept="image/png,image/jpeg"
+                onChange={setCoverFile}
+              />
+              {imagePreview && (
+                <Image
+                  src={imagePreview}
+                  mt="sm"
+                  radius="md"
+                  h={200}
+                  fit="contain"
+                />
+              )}
             </Tabs.Panel>
 
             <Tabs.Panel value="url" pt="xs">
-              <TextInput label="URL Ảnh bìa" placeholder="https://example.com/image.png" {...form.getInputProps('cover_image_url')} />
+              <TextInput
+                label="URL ảnh bìa"
+                placeholder="https://example.com/image.png"
+                {...form.getInputProps('cover_image_url')}
+              />
             </Tabs.Panel>
           </Tabs>
-
-          <Switch label="Kích hoạt sự kiện" {...form.getInputProps('is_active', { type: 'checkbox' })} />
-          <Button type="submit" mt="md" loading={loading}>
-            Lưu
-          </Button>
         </Stack>
+        <Box
+          pos="sticky"
+          bottom={0}
+          p="md"
+          style={(theme) => {
+            const { colorScheme } = useMantineColorScheme();
+            return {
+              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+              borderTop: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[2]}`,
+              marginTop: 'auto',
+              marginLeft: -16,
+              marginRight: -16,
+              marginBottom: -16,
+            }
+          }}
+        >
+          <Group justify="flex-end">
+            <Button
+              variant="light"
+              color="gray"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              loading={loading}
+            >
+              Lưu
+            </Button>
+          </Group>
+        </Box>
       </form>
     </Modal>
+
   );
 }

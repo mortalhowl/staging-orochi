@@ -54,11 +54,11 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
   };
 
   return (
-    <Drawer opened={opened} onClose={onClose} title="Chi tiết bài viết" position="right" size="lg">
+    <Drawer opened={opened} onClose={onClose} title="Chi tiết bài viết" position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>
         <LoadingOverlay visible={loading} />
         {article && (
-          <Stack justify="space-between" h="100%">
+          <Stack justify="space-between" h="calc(100vh - 100px)">
             <Stack>
               <div
                 style={{
@@ -76,20 +76,21 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
                     maxWidth: '100%',
                     height: 'auto',
                     width: 'auto',
-                    objectFit: 'contain' // giữ nguyên tỉ lệ, không cắt
+                    objectFit: 'contain'
                   }}
                 />
               </div>
 
-              <Group>
+              <Group justify="space-between">
                 <Title order={3}
                   style={{
                     fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
                     color: '#008a87',
                     fontSize: '1.5rem',
                     fontWeight: 700,
-                  }}>{article.title}</Title>
-                <Badge color={article.status === 'public' ? 'green' : 'gray'}>
+                  }}>{article.title}
+                </Title>
+                <Badge color={article.status === 'public' ? 'green' : 'red'}>
                   {article.status === 'public' ? 'Công khai' : 'Ẩn'}
                 </Badge>
               </Group>
@@ -100,9 +101,9 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
                 <Text size="sl" my="0px" dangerouslySetInnerHTML={{ __html: article.content }} />
               </div>
             </Stack>
-            <Group grow>
-              <Button variant="default" onClick={() => onEdit(article)}>Sửa bài viết</Button>
-              <Button color="red" onClick={handleDelete}>Xóa bài viết</Button>
+            <Group justify="flex-end" gap="sm" >
+              <Button variant="default" onClick={() => onEdit(article)}>Sửa</Button>
+              <Button color="red" onClick={handleDelete}>Xóa</Button>
             </Group>
           </Stack>
         )}

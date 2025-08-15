@@ -1,4 +1,4 @@
-import { Stack, Image, Group, Title, Badge, Divider, Text, Button, ActionIcon } from '@mantine/core';
+import { Stack, Image, Group, Title, Badge, Text, Button, ActionIcon } from '@mantine/core';
 import { IconCalendar, IconMapPin } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -43,7 +43,7 @@ export function EventDetailsTab({ event, onEdit, onSuccess, onClose }: EventDeta
 
 
   return (
-    <Stack justify="space-between" h="calc(100vh - 150px)">
+    <Stack justify="space-between" h="calc(95vh - 100px)">
       <Stack>
         <div
           style={{
@@ -77,9 +77,6 @@ export function EventDetailsTab({ event, onEdit, onSuccess, onClose }: EventDeta
           >{event.title}</Title>
           <Badge size="lg" color={event.is_active ? 'green' : 'gray'}>{event.is_active ? 'Đang hoạt động' : 'Đã ẩn'}</Badge>
         </Group>
-        <Divider />
-        {/* <Group wrap='nowrap'><IconCalendar size={20} /><Text>{formatDate(event.start_time)} - {formatDate(event.end_time)}</Text></Group> */}
-        {/* <Group wrap='nowrap'><IconMapPin size={20} /><Text>{event.location || 'Chưa có địa điểm'}</Text></Group> */}
 
         <Group align="center" wrap="nowrap">
           <ActionIcon variant="gradient" gradient={{ deg: 45, from: '#088e8b', to: '#33b8b4' }} size="lg">
@@ -103,13 +100,11 @@ export function EventDetailsTab({ event, onEdit, onSuccess, onClose }: EventDeta
           </div>
         </Group>
 
-        <Divider />
-        {/* <Text c="dimmed" size="sm" fw="600">Mô tả:</Text> */}
-        <Text>{event.description || 'Chưa có mô tả'}</Text>
+        <Text size="sl" my="0px" dangerouslySetInnerHTML={{ __html: event.description || 'Chưa có mô tả' }} />
       </Stack>
       <Group justify="flex-end" gap="sm">
-        <Button variant="default" onClick={() => onEdit(event)}>Sửa thông tin</Button>
-        <Button color="red" onClick={handleDelete}>Xóa sự kiện</Button>
+        <Button variant="default" onClick={() => onEdit(event)}>Sửa</Button>
+        <Button color="red" onClick={handleDelete}>Xóa</Button>
       </Group>
     </Stack>
   );
