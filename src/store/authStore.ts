@@ -12,9 +12,10 @@ interface AuthState {
   isLoading: boolean;
   checkSession: () => Promise<void>;
   logout: () => Promise<void>;
+  hasEditPermission: (moduleCode: string) => boolean;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   userProfile: null,
   permissions: [],
@@ -63,6 +64,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await supabase.auth.signOut();
     set({ session: null, userProfile: null, permissions: [], isLoading: false });
+  },
+
+  hasEditPermission: (moduleCode: string) => {
+    const { userProfile, permissions } = get();
+    if (userProfile?.role === 'admin') return true;
+    if (userProfile?.role === 'staff') {
+      return permissions.some(p => p.moduleCode === moduleCode && p.canEdit);
+    }
+    return false;
   }
 
 }));

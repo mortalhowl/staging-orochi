@@ -10,6 +10,7 @@ import { ArticlesToolbar } from '../../components/admin/articles/ArticlesToolbar
 import type { Article } from '../../types';
 import { useDebounce } from 'use-debounce';
 import { notifications } from '@mantine/notifications';
+import { useAuthStore } from '../../store/authStore';
 
 const ITEMS_PER_PAGE = 10;
 interface EventSelectItem { value: string; label: string; }
@@ -30,6 +31,8 @@ export function ArticlesPage() {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [articleToEdit, setArticleToEdit] = useState<Article | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { hasEditPermission } = useAuthStore(); 
+  const canEditArticles = hasEditPermission('articles');
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -101,7 +104,9 @@ export function ArticlesPage() {
     <Container size="xl">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Bài viết</Title>
-        <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>Thêm</Button>
+        {canEditArticles && (
+          <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>Thêm bài viết</Button>
+        )}
       </Group>
 
       <Paper withBorder p="md" radius="md">
@@ -136,6 +141,7 @@ export function ArticlesPage() {
           selection={selection}
           setSelection={setSelection}
           onRowClick={handleRowClick}
+          canEdit={canEditArticles}
         />
 
         <Group justify="center" mt="md">
@@ -162,6 +168,7 @@ export function ArticlesPage() {
         onClose={closeDrawer}
         onSuccess={handleSuccess}
         onEdit={handleEdit}
+        canEdit={canEditArticles}
       />
     </Container>
   );

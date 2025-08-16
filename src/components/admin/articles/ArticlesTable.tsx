@@ -8,15 +8,13 @@ interface ArticlesTableProps {
     selection: string[];
     setSelection: (selection: string[]) => void;
     onRowClick: (articleId: string) => void;
+    canEdit: boolean;
 }
 
-export function ArticlesTable({ articles, loading, selection, setSelection, onRowClick }: ArticlesTableProps) {
+export function ArticlesTable({ articles, loading, selection, setSelection, onRowClick, canEdit }: ArticlesTableProps) {
     const rows = articles.map((article) => (
-        <Table.Tr
-            key={article.id}
-            bg={selection.includes(article.id) ? 'var(--mantine-color-blue-light)' : undefined}
-            style={{ cursor: 'pointer' }}
-        >
+        <Table.Tr key={article.id} onClick={() => onRowClick(article.id)} style={{ cursor: 'pointer' }}>
+            { canEdit && (
             <Table.Td onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                     aria-label="Select row"
@@ -30,6 +28,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
                     }
                 />
             </Table.Td>
+            )}
             <Table.Td onClick={() => onRowClick(article.id)}>
                 <Tooltip label={article.title} withArrow>
                     <Text truncate="end" style={{ maxWidth: 300 }}>{article.title}</Text>
@@ -46,12 +45,13 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
     ));
 
     return (
-        <div style={{ position: 'relative'}}>
+        <div style={{ position: 'relative' }}>
             <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
             <ScrollArea>
                 <Table striped highlightOnHover withTableBorder miw={800}>
                     <Table.Thead>
                         <Table.Tr>
+                            { canEdit && (
                             <Table.Th style={{ width: 40 }}>
                                 <Checkbox
                                     onChange={(e) =>
@@ -61,6 +61,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
                                     indeterminate={selection.length > 0 && selection.length !== articles.length}
                                 />
                             </Table.Th>
+                            )}
                             <Table.Th>Tên bài viết</Table.Th>
                             <Table.Th>Sự kiện liên quan</Table.Th>
                             <Table.Th>Ngày tạo</Table.Th>

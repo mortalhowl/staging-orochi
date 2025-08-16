@@ -11,9 +11,10 @@ interface ArticleDetailDrawerProps {
   onClose: () => void;
   onSuccess: () => void;
   onEdit: (article: Article) => void;
+  canEdit: boolean;
 }
 
-export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onEdit }: ArticleDetailDrawerProps) {
+export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onEdit, canEdit }: ArticleDetailDrawerProps) {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +70,7 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
                 }}
               >
                 <Image
-                  src={article.image_url}
+                  src={article.image_url || '/placeholder-image.jpg'}
                   radius="md"
                   style={{
                     maxHeight: '350px',
@@ -101,10 +102,12 @@ export function ArticleDetailDrawer({ articleId, opened, onClose, onSuccess, onE
                 <Text size="sl" my="0px" dangerouslySetInnerHTML={{ __html: article.content }} />
               </div>
             </Stack>
+            {canEdit && (
             <Group justify="flex-end" gap="sm" >
               <Button variant="default" onClick={() => onEdit(article)}>Sửa</Button>
               <Button color="red" onClick={handleDelete}>Xóa</Button>
             </Group>
+            )}
           </Stack>
         )}
       </div>
