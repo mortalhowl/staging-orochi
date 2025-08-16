@@ -10,6 +10,7 @@ import { EventsToolbar } from '../../components/admin/events/EventsToolbar';
 import type { Event, Sorting } from '../../types';
 import { useDebounce } from 'use-debounce';
 import { notifications } from '@mantine/notifications';
+import { useAuthStore } from '../../store/authStore';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,6 +29,8 @@ export function EventsPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>('all');
   const [sorting, setSorting] = useState<Sorting>({ column: 'created_at', direction: 'desc' });
   const [debouncedSearchTerm] = useDebounce(searchTerm, 400);
+  const { hasEditPermission } = useAuthStore();
+  const canEditEvents = hasEditPermission('events');
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -85,9 +88,9 @@ export function EventsPage() {
     <Container size="xl">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Sự kiện</Title>
-        <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>
-          Thêm
-        </Button>
+        {canEditEvents && (
+            <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>Thêm</Button>
+        )}
       </Group>
 
       <Paper withBorder p="md" radius="md">
@@ -127,6 +130,7 @@ export function EventsPage() {
           onRowClick={handleRowClick}
           sorting={sorting}
           setSorting={setSorting}
+          canEdit={canEditEvents}
         />
 
         <Group justify="center" mt="md">
@@ -153,6 +157,7 @@ export function EventsPage() {
         onSuccess={handleSuccess}
         onEdit={handleEdit}
         refreshKey={refreshKey}
+        canEdit={canEditEvents}
       />
     </Container>
   );

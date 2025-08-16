@@ -11,9 +11,10 @@ interface EventDetailsTabProps {
   onEdit: (event: Event) => void;
   onSuccess: () => void;
   onClose: () => void;
+  canEdit: boolean;
 }
 
-export function EventDetailsTab({ event, onEdit, onSuccess, onClose }: EventDetailsTabProps) {
+export function EventDetailsTab({ event, onEdit, onSuccess, onClose, canEdit }: EventDetailsTabProps) {
   const handleDelete = () => {
     if (!event) return;
 
@@ -102,10 +103,12 @@ export function EventDetailsTab({ event, onEdit, onSuccess, onClose }: EventDeta
 
         <Text size="sl" my="0px" dangerouslySetInnerHTML={{ __html: event.description || 'Chưa có mô tả' }} />
       </Stack>
+{ canEdit && (
       <Group justify="flex-end" gap="sm">
         <Button variant="default" onClick={() => onEdit(event)}>Sửa</Button>
         <Button color="red" onClick={handleDelete}>Xóa</Button>
       </Group>
+)}
     </Stack>
   );
 }

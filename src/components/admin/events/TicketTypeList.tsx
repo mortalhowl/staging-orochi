@@ -7,7 +7,7 @@ import { TicketTypeFormModal } from './TicketTypeFormModal';
 import type { TicketType } from '../../../types';
 import { modals } from '@mantine/modals';
 
-interface TicketTypeListProps { eventId: string; }
+interface TicketTypeListProps { eventId: string; canEdit: boolean;}
 
 const statusMapping: { [key in TicketType['status']]: { label: string; color: string } } = {
   public: { label: 'Công khai', color: 'green' },
@@ -15,7 +15,7 @@ const statusMapping: { [key in TicketType['status']]: { label: string; color: st
   invited: { label: 'Vé mời', color: 'violet' },
 };
 
-export function TicketTypeList({ eventId }: TicketTypeListProps) {
+export function TicketTypeList({ eventId, canEdit }: TicketTypeListProps) {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
@@ -56,12 +56,12 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
       <Table.Td>{item.price.toLocaleString('vi-VN')}đ</Table.Td>
       <Table.Td>{item.quantity_sold} / {item.quantity_total === null ? '∞' : item.quantity_total}</Table.Td>
       <Table.Td><Badge color={statusMapping[item.status].color}>{statusMapping[item.status].label}</Badge></Table.Td>
-      <Table.Td>
+      { canEdit && (<Table.Td>
         <Group gap="xs" wrap='nowrap'>
           <ActionIcon variant="subtle" onClick={() => handleEdit(item)}><IconPencil size={16} /></ActionIcon>
           <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(item)}><IconTrash size={16} /></ActionIcon>
         </Group>
-      </Table.Td>
+      </Table.Td>)}
     </Table.Tr>
   ));
 
@@ -81,7 +81,7 @@ export function TicketTypeList({ eventId }: TicketTypeListProps) {
                 <Table.Th>Giá</Table.Th>
                 <Table.Th>Đã bán/SL</Table.Th>
                 <Table.Th>Trạng thái</Table.Th>
-                <Table.Th>Hành động</Table.Th>
+                { canEdit &&(<Table.Th>Hành động</Table.Th>)}                
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={5} align="center"><Text>Chưa có loại vé nào</Text></Table.Td></Table.Tr>}</Table.Tbody>

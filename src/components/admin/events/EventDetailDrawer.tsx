@@ -14,9 +14,10 @@ interface EventDetailDrawerProps {
   onSuccess: () => void;
   onEdit: (event: Event) => void;
   refreshKey: number;
+  canEdit: boolean;
 }
 
-export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit, refreshKey }: EventDetailDrawerProps) {
+export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit, refreshKey, canEdit }: EventDetailDrawerProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -54,11 +55,11 @@ export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit,
           </Tabs.List>
 
           <Tabs.Panel value="details" pt="xs">
-            <EventDetailsTab event={event} onEdit={onEdit} onSuccess={onSuccess} onClose={onClose} />
+            <EventDetailsTab event={event} onEdit={onEdit} onSuccess={onSuccess} onClose={onClose} canEdit={canEdit} />
           </Tabs.Panel>
 
           <Tabs.Panel value="tickets" pt="xs">
-            <TicketTypeList eventId={event.id} />
+            <TicketTypeList eventId={event.id} canEdit={canEdit}/>
           </Tabs.Panel>
         </Tabs>
       )}

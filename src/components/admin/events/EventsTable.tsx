@@ -11,6 +11,7 @@ interface EventsTableProps {
   onRowClick: (eventId: string) => void;
   sorting: Sorting;
   setSorting: (sorting: Sorting) => void;
+  canEdit: boolean;
 }
 
 function Th({ children, reversed, sorted, onSort }: { children: React.ReactNode; reversed: boolean; sorted: boolean; onSort: () => void; }) {
@@ -27,7 +28,7 @@ function Th({ children, reversed, sorted, onSort }: { children: React.ReactNode;
   );
 }
 
-export function EventsTable({ events, loading, selection, setSelection, onRowClick, sorting, setSorting }: EventsTableProps) {
+export function EventsTable({ events, loading, selection, setSelection, onRowClick, sorting, setSorting, canEdit }: EventsTableProps) {
   const setSort = (field: keyof Event) => {
     const reversed = field === sorting.column && sorting.direction === 'asc';
     setSorting({ column: field, direction: reversed ? 'desc' : 'asc' });
@@ -39,7 +40,7 @@ export function EventsTable({ events, loading, selection, setSelection, onRowCli
       onClick={() => onRowClick(event.id)} 
       style={{ cursor: 'pointer' }} 
     >
-      <Table.Td onClick={(e) => e.stopPropagation()}> 
+      { canEdit && (<Table.Td onClick={(e) => e.stopPropagation()}> 
         <Checkbox
           aria-label="Select row"
           checked={selection.includes(event.id)}
@@ -51,7 +52,7 @@ export function EventsTable({ events, loading, selection, setSelection, onRowCli
             )
           }
         />
-      </Table.Td>
+      </Table.Td>)}
       <Table.Td>{event.title}</Table.Td>
       <Table.Td>{formatDate(event.start_time)}</Table.Td>
       <Table.Td>{formatDate(event.end_time)}</Table.Td>
@@ -72,7 +73,7 @@ return (
       <Table striped highlightOnHover withTableBorder miw={800}>
         <Table.Thead>
           <Table.Tr >
-            <Table.Th style={{ width: 40 }}>
+            { canEdit && (<Table.Th style={{ width: 40 }}>
               <Checkbox
                 onChange={(e) =>
                   setSelection(e.currentTarget.checked ? events.map((event) => event.id) : [])
@@ -80,7 +81,7 @@ return (
                 checked={selection.length > 0 && selection.length === events.length}
                 indeterminate={selection.length > 0 && selection.length !== events.length}
               />
-            </Table.Th>
+            </Table.Th>)}
             <Th sorted={sorting.column === 'title'} reversed={sorting.direction === 'desc'} onSort={() => setSort('title')}>
               Tên sự kiện
             </Th>
