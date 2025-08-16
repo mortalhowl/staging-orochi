@@ -1,8 +1,8 @@
-import { Drawer, LoadingOverlay, Text, Stack, Group, Button, Divider, Alert, Table, Tabs, Title, ActionIcon, Tooltip } from '@mantine/core';
+import { Drawer, LoadingOverlay, Text, Stack, Group, Button, Divider, Alert, Table, Tabs, ActionIcon, Tooltip } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
-import { modals } from '@mantine/modals';
+// import { modals } from '@mantine/modals';
 import { TransactionNotes } from './TransactionNotes';
 import { IconTicket, IconNotes, IconCopy } from '@tabler/icons-react';
 import {useClipboard} from '@mantine/hooks';
@@ -69,47 +69,47 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
   }, [transactionId, opened]);
 
 
-  const handleConfirmPayment = () => {
-    modals.openConfirmModal({
-      title: 'Xác nhận thanh toán',
-      children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này? Vé sẽ được tạo và gửi ngay lập tức.</Text>,
-      labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
-      confirmProps: { color: 'green' },
-      onConfirm: async () => {
-        const notiId = notifications.show({
-          loading: true,
-          title: 'Đang xử lý...',
-          message: 'Vui lòng chờ.',
-          autoClose: false,
-        });
+  // const handleConfirmPayment = () => {
+  //   modals.openConfirmModal({
+  //     title: 'Xác nhận thanh toán',
+  //     children: <Text size="sm">Bạn có chắc chắn đã nhận được khoản thanh toán cho đơn hàng này? Vé sẽ được tạo và gửi ngay lập tức.</Text>,
+  //     labels: { confirm: 'Xác nhận & Gửi vé', cancel: 'Hủy' },
+  //     confirmProps: { color: 'green' },
+  //     onConfirm: async () => {
+  //       const notiId = notifications.show({
+  //         loading: true,
+  //         title: 'Đang xử lý...',
+  //         message: 'Vui lòng chờ.',
+  //         autoClose: false,
+  //       });
 
-        // Gọi đến Edge Function chuyên dụng
-        const { error: functionError } = await supabase.functions.invoke('confirm-sale-transaction', {
-          body: { transactionId },
-        });
+  //       // Gọi đến Edge Function chuyên dụng
+  //       const { error: functionError } = await supabase.functions.invoke('confirm-sale-transaction', {
+  //         body: { transactionId },
+  //       });
 
-        if (functionError) {
-          notifications.update({
-            id: notiId,
-            color: 'red',
-            title: 'Thất bại',
-            message: 'Xác nhận giao dịch thất bại. Vui lòng thử lại.',
-            autoClose: 5000,
-          });
-        } else {
-          notifications.update({
-            id: notiId,
-            color: 'green',
-            title: 'Thành công',
-            message: 'Đã xác nhận thanh toán. Vé đang được gửi đi.',
-            autoClose: 5000,
-          });
-          onSuccess(); // Refresh lại bảng
-          onClose();   // Đóng Drawer
-        }
-      },
-    });
-  };
+  //       if (functionError) {
+  //         notifications.update({
+  //           id: notiId,
+  //           color: 'red',
+  //           title: 'Thất bại',
+  //           message: 'Xác nhận giao dịch thất bại. Vui lòng thử lại.',
+  //           autoClose: 5000,
+  //         });
+  //       } else {
+  //         notifications.update({
+  //           id: notiId,
+  //           color: 'green',
+  //           title: 'Thành công',
+  //           message: 'Đã xác nhận thanh toán. Vé đang được gửi đi.',
+  //           autoClose: 5000,
+  //         });
+  //         onSuccess(); // Refresh lại bảng
+  //         onClose();   // Đóng Drawer
+  //       }
+  //     },
+  //   });
+  // };
 
   const handleUpdateStatus = async (newStatus: 'paid' | 'failed') => {
         setActionLoading(true);
@@ -186,7 +186,7 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
 
 
   return (
-    <Drawer opened={opened} onClose={onClose} title={<Title order={4}>Chi tiết Đơn hàng</Title>} position="right" size="md">
+    <Drawer opened={opened} onClose={onClose} title={<Text fw={700}>Chi tiết Đơn hàng</Text>} position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>
         <LoadingOverlay visible={loading} />
         {error && <Alert color="red">{error}</Alert>}
