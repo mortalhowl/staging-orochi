@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Paper, Text, Center, Loader, Table, SimpleGrid, Stack, Badge } from '@mantine/core';
+import { Paper, Text, Center, Loader, Table, SimpleGrid, Stack, Badge, ScrollArea } from '@mantine/core';
 import { supabase } from '../../../services/supabaseClient';
 import { formatDateTime } from '../../../utils/formatters';
 
@@ -73,9 +73,10 @@ export function TransactionAnalyticsTab({ dateRange }: TransactionAnalyticsTabPr
         </Paper>
       </SimpleGrid>
 
-      <Paper withBorder radius="md" p="md" mt="xl">
+      <Paper withBorder radius="md" p="md">
         <Text fw={500} mb="md">Các giao dịch gần đây</Text>
-        <Table>
+        <ScrollArea>
+        <Table striped highlightOnHover withTableBorder miw={800}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Mã GD</Table.Th>
@@ -101,6 +102,7 @@ export function TransactionAnalyticsTab({ dateRange }: TransactionAnalyticsTabPr
             ))}
           </Table.Tbody>
         </Table>
+        </ScrollArea>
       </Paper>
     </Stack>
   );

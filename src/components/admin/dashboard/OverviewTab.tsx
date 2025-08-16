@@ -96,14 +96,15 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
         </Paper>
       </SimpleGrid>
 
-      <Paper withBorder radius="md" p="md" mt="xl">
+      <Paper withBorder radius="md" p="md">
         <Text fw={500} mb="md">Doanh thu theo thời gian</Text>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={revenueData}>
+        <ResponsiveContainer width="100%" height={300} >
+          <LineChart data={revenueData}
+            margin={{ top: 20, right: 20, left: 40, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis tickFormatter={(value) => new Intl.NumberFormat('vi-VN').format(value)} />
-            <Tooltip formatter={(value: number) => `${value.toLocaleString('vi-VN')}đ`} />
+            <Tooltip formatter={(value: number) => `${value.toLocaleString('vi-VN')}`} />
             <Legend />
             <Line type="monotone" dataKey="revenue" name="Doanh thu" stroke="#8884d8" activeDot={{ r: 8 }} />
           </LineChart>

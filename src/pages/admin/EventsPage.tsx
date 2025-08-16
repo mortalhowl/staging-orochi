@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Button, Group, Paper, TextInput, Select, Pagination, SimpleGrid } from '@mantine/core';
+import { Title, Button, Group, Paper, TextInput, Select, Pagination, SimpleGrid, Container } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconSearch } from '@tabler/icons-react';
 import { supabase } from '../../services/supabaseClient';
@@ -82,7 +82,7 @@ export function EventsPage() {
   const handleCloseModal = () => { closeModal(); setEventToEdit(null); };
 
   return (
-    <>
+    <Container size="xl">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Sự kiện</Title>
         <Button onClick={handleAddNew} leftSection={<IconPlus size={16} />}>
@@ -154,6 +154,6 @@ export function EventsPage() {
         onEdit={handleEdit}
         refreshKey={refreshKey}
       />
-    </>
+    </Container>
   );
 }

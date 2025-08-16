@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Drawer, Loader, Center, Text, Stack, Group, Image, Paper, Title, Badge, Button, Divider } from '@mantine/core';
+import { Drawer, Loader, Center, Text, Stack, Group, Image, Paper, Title, Badge, Button, Tooltip, ActionIcon } from '@mantine/core';
+import { useClipboard } from '@mantine/hooks';
+import { IconCopy } from '@tabler/icons-react';
 import { supabase } from '../../../services/supabaseClient';
 import qrcode from 'qrcode';
 import { formatDateTime } from '../../../utils/formatters';
@@ -18,6 +20,7 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: Tic
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const clipboard = useClipboard();
 
   const fetchAndGenerateQr = async () => {
     if (!ticketId) return;
@@ -27,9 +30,9 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: Tic
         .rpc('search_issued_tickets', { search_term: ticketId })
         .limit(1)
         .single();
-      
+
       if (error) throw error;
-      
+
       setTicket(data as FullTicketDetails);
       const ticketData = data as FullTicketDetails;
       const qrUrl = await qrcode.toDataURL(ticketData.id, { errorCorrectionLevel: 'H', width: 200 });
@@ -50,35 +53,42 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: Tic
   const handleUpdateStatus = async (newStatus: 'active' | 'disabled') => {
     setActionLoading(true);
     try {
-        const { error } = await supabase.functions.invoke('update-ticket-status', {
-            body: { ticketId, newStatus }
-        });
-        if (error) throw error;
+      const { error } = await supabase.functions.invoke('update-ticket-status', {
+        body: { ticketId, newStatus }
+      });
+      if (error) throw error;
 
-        notifications.show({
-            title: 'Thành công',
-            message: `Đã ${newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa'} vé thành công.`,
-            color: 'green'
-        });
-        fetchAndGenerateQr(); // Tải lại dữ liệu trong drawer
-        onSuccess(); // Báo cho trang cha biết để refresh bảng
+      notifications.show({
+        title: 'Thành công',
+        message: `Đã ${newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa'} vé thành công.`,
+        color: 'green'
+      });
+      fetchAndGenerateQr(); // Tải lại dữ liệu trong drawer
+      onSuccess(); // Báo cho trang cha biết để refresh bảng
     } catch (err: any) {
-        notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
+      notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
     } finally {
-        setActionLoading(false);
+      setActionLoading(false);
     }
   };
 
   return (
-    <Drawer opened={opened} onClose={onClose} title="Chi tiết vé" position="right" size="md">
+    <Drawer opened={opened} onClose={onClose} title={<Text size="md" fw={700}>Chi tiết vé</Text>} position="right" size="md">
       {loading && <Center><Loader /></Center>}
       {!loading && ticket && (
-        <Stack justify="space-between" h="100%">
+        <Stack justify="space-between" h="calc(100vh - 100px)">
           <Stack>
             <Paper withBorder p="xl" radius="md">
               <Stack align="center">
                 {qrCodeUrl && <Image src={qrCodeUrl} w={200} h={200} />}
-                <Text c="dimmed" size="sm" style={{ wordBreak: 'break-all' }}>Mã vé: {ticket.id}</Text>
+                <Group wrap='nowrap' gap="xs">
+                  <Text c="dimmed" size="sm" style={{ wordBreak: 'break-all' }}>{ticket.id}</Text>
+                  <Tooltip label="Sao chép Mã ĐH">
+                    <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(ticket.id); }}>
+                      <IconCopy size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
               </Stack>
             </Paper>
             <Stack mt="md" gap="xs">
@@ -90,16 +100,15 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: Tic
               <Group><Text><b>Check-in:</b></Text><Badge color={ticket.is_used ? 'green' : 'gray'}>{ticket.is_used ? 'Đã dùng' : 'Chưa dùng'}</Badge></Group>
               <Group><Text><b>Trạng thái vé:</b></Text><Badge color={ticket.status === 'active' ? 'teal' : 'red'}>{ticket.status === 'active' ? 'Hoạt động' : 'Vô hiệu hóa'}</Badge></Group>
               {ticket.is_used && (
-                  <Text><b>Thời gian check-in:</b> {formatDateTime(ticket.used_at)} {ticket.checked_in_by_name && ` bởi ${ticket.checked_in_by_name}`}</Text>
+                <Text><b>Thời gian check-in:</b> {formatDateTime(ticket.used_at)} {ticket.checked_in_by_name && ` bởi ${ticket.checked_in_by_name}`}</Text>
               )}
             </Stack>
           </Stack>
           <Stack>
-            <Divider my="xs" />
             {ticket.status === 'active' ? (
-                <Button color="orange" onClick={() => handleUpdateStatus('disabled')} loading={actionLoading}>Vô hiệu hóa vé</Button>
+              <Button color="orange" onClick={() => handleUpdateStatus('disabled')} loading={actionLoading}>Vô hiệu hóa vé</Button>
             ) : (
-                <Button color="teal" onClick={() => handleUpdateStatus('active')} loading={actionLoading}>Kích hoạt lại vé</Button>
+              <Button color="teal" onClick={() => handleUpdateStatus('active')} loading={actionLoading}>Kích hoạt lại vé</Button>
             )}
           </Stack>
         </Stack>

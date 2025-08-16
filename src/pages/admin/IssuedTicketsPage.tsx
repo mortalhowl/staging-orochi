@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Paper, Pagination, Group, Button, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Button, SimpleGrid, Stack, Text, Container } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TicketsToolbar } from '../../components/admin/tickets/TicketsToolbar';
@@ -152,9 +152,9 @@ export function IssuedTicketsPage() {
   };
 
   return (
-    <>
+    <Container size="xl">
       <Group justify="space-between" mb="xl">
-        <Title order={2}>Quản lý Vé đã phát hành</Title>
+        <Title order={2}>Quản lý Vé</Title>
         <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16}/>}>
             Xuất Excel
         </Button>
@@ -176,6 +176,6 @@ export function IssuedTicketsPage() {
       </Paper>
 
       <TicketDetailDrawer ticketId={selectedTicketId} opened={drawerOpened} onClose={closeDrawer} onSuccess={handleSuccess} />
-    </>
+    </Container>
   );
 }

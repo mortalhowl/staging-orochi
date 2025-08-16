@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Table, Loader, Center, Badge } from '@mantine/core';
+import { Table, Loader, Center, Badge, ScrollArea, Group, Tooltip, Text, ActionIcon } from '@mantine/core';
+import { IconCopy } from '@tabler/icons-react';
+import { useClipboard } from '@mantine/hooks';
 import { supabase } from '../../../services/supabaseClient';
 import { formatDateTime } from '../../../utils/formatters';
 
@@ -26,6 +28,7 @@ const statusMapping: { [key: string]: { label: string; color: string } } = {
 export function UserTransactions({ userId }: UserTransactionsProps) {
   const [transactions, setTransactions] = useState<UserTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const clipboard = useClipboard();
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -63,7 +66,19 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
     return (
       <Table.Tr key={trans.id}>
         <Table.Td>{trans.events?.title || 'N/A'}</Table.Td>
-        <Table.Td>{trans.id.split('-')[0].toUpperCase()}</Table.Td>
+        <Table.Td>
+          <Group gap="xs" wrap="nowrap">
+            <Tooltip label={trans.id}>
+              <Text truncate maw={200}>{trans.id}</Text>
+            </Tooltip>
+            <Tooltip label="Sao chép Mã ĐH">
+              <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(trans.id); }}>
+                <IconCopy size={14} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+
+        </Table.Td>
         <Table.Td>{totalQuantity}</Table.Td>
         <Table.Td>{trans.total_amount.toLocaleString('vi-VN')}đ</Table.Td>
         <Table.Td>
@@ -77,20 +92,22 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   });
 
   return (
-    <Table striped highlightOnHover withTableBorder>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Sự kiện</Table.Th>
-          <Table.Th>Mã GD</Table.Th>
-          <Table.Th>SL Vé</Table.Th>
-          <Table.Th>Tổng tiền</Table.Th>
-          <Table.Th>Trạng thái</Table.Th>
-          <Table.Th>Ngày tạo</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={6} align="center">Người dùng này chưa có giao dịch nào.</Table.Td></Table.Tr>}
-      </Table.Tbody>
-    </Table>
+    <ScrollArea>
+      <Table striped highlightOnHover withTableBorder miw={800}>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Sự kiện</Table.Th>
+            <Table.Th>Mã GD</Table.Th>
+            <Table.Th>SL Vé</Table.Th>
+            <Table.Th>Tổng tiền</Table.Th>
+            <Table.Th>Trạng thái</Table.Th>
+            <Table.Th>Ngày tạo</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={6} align="center">Người dùng này chưa có giao dịch nào.</Table.Td></Table.Tr>}
+        </Table.Tbody>
+      </Table>
+    </ScrollArea>
   );
 }

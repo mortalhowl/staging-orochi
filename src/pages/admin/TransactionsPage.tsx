@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Paper, Pagination, Group, Text, Badge, Button } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Text, Badge, Button, Container   } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TransactionsTable } from '../../components/admin/transactions/TransactionsTable';
@@ -162,7 +162,7 @@ export function TransactionsPage() {
   };
 
   return (
-    <>
+    <Container size="xl">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Đơn hàng</Title>
         <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16} />}>
@@ -214,6 +214,6 @@ export function TransactionsPage() {
         onClose={closeDrawer}
         onSuccess={handleSuccess}
       />
-    </>
+    </Container>
   );
 }

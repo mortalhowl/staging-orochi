@@ -37,8 +37,8 @@ export function AdminDashboardPage() {
       <Tabs defaultValue="overview">
         <Tabs.List>
           <Tabs.Tab value="overview">Tổng quan</Tabs.Tab>
-          <Tabs.Tab value="events">Phân tích Sự kiện</Tabs.Tab>
-          <Tabs.Tab value="transactions">Phân tích Giao dịch</Tabs.Tab>
+          <Tabs.Tab value="events">Sự kiện</Tabs.Tab>
+          <Tabs.Tab value="transactions">Giao dịch</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="overview" pt="md">

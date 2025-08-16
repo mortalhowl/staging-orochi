@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Button, Group, Paper, Pagination } from '@mantine/core';
+import { Title, Button, Group, Paper, Pagination, Container } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { supabase } from '../../services/supabaseClient';
 import type { UserProfile, UserRole } from '../../types';
@@ -49,9 +49,9 @@ export function UsersPage() {
   const handleSuccess = () => setRefreshKey(k => k + 1);
 
   return (
-    <>
+    <Container size="xl">
       <Group justify="space-between" mb="xl">
-        <Title order={2}>Quản lý Người dùng</Title>
+        <Title order={2}>Người dùng</Title>
         <Button onClick={openModal} leftSection={<IconPlus size={16} />}>Thêm nhân viên</Button>
       </Group>
 
@@ -65,6 +65,6 @@ export function UsersPage() {
       </Paper>
       
       <AddStaffModal opened={modalOpened} onClose={closeModal} onSuccess={handleSuccess} />
-    </>
+    </Container>
   );
 }

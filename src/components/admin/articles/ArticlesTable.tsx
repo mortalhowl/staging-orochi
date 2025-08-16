@@ -46,7 +46,7 @@ export function ArticlesTable({ articles, loading, selection, setSelection, onRo
     ));
 
     return (
-        <div style={{ position: 'relative', height: 'calc(80vh - 200px)' }}>
+        <div style={{ position: 'relative'}}>
             <LoadingOverlay visible={loading} zIndex={10} overlayProps={{ radius: 'sm', blur: 2 }} />
             <ScrollArea>
                 <Table striped highlightOnHover withTableBorder miw={800}>

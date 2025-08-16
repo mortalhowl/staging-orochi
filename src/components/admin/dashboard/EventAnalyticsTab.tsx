@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Paper, Text, Center, Loader, Table, MultiSelect, Stack } from '@mantine/core';
+import { Paper, Text, Center, Loader, Table, MultiSelect, Stack, ScrollArea } from '@mantine/core';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../../services/supabaseClient';
 
@@ -64,24 +64,23 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
           maxValues={5}
           searchable
         />
-        <ResponsiveContainer width="100%" height={300} style={{ marginTop: '20px' }}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 20, left: 50, bottom: 20 }} // thêm khoảng trống bên trái
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="event_name" />
-            <YAxis />
-            <Tooltip formatter={(value: number) => `${value.toLocaleString('vi-VN')}`} />
-            <Legend />
-            <Bar dataKey="total_revenue" name="Doanh thu (đ)" fill="#8884d8" />
-            <Bar dataKey="tickets_sold" name="Số vé bán" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
-
+        <ScrollArea>
+          <ResponsiveContainer width="100%" height={300} style={{ marginTop: '20px' }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 20, left: 40, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="event_name" />
+              <YAxis yAxisId="left" tickFormatter={(value: number) => value.toLocaleString('vi-VN')} />
+              <YAxis yAxisId="right" orientation="right" tickFormatter={(value: number) => value.toLocaleString('vi-VN')} />
+              <Tooltip formatter={(value: number) => `${value.toLocaleString('vi-VN')}`} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="total_revenue" name="Doanh thu (đ)" fill="#8884d8" />
+              <Bar yAxisId="right" dataKey="tickets_sold" name="Số vé bán" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ScrollArea>
       </Paper>
 
-      <Paper withBorder radius="md" p="md" mt="xl">
+      <Paper withBorder radius="md" p="md">
         <Text fw={500} mb="md">Bảng dữ liệu chi tiết</Text>
         <Table>
           <Table.Thead>

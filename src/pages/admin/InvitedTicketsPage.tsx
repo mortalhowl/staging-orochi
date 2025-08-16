@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Container, Title, Tabs, Grid, Select, Paper, Stack, Group, TextInput, NumberInput, ActionIcon, Button, Text, Alert, FileInput, Table, Divider } from '@mantine/core';
+import { Container, Title, Tabs, Grid, Select, Paper, Stack, Group, TextInput, NumberInput, ActionIcon, Button, Text, Alert, FileInput, Table, Divider, Flex } from '@mantine/core';
 import { IconPlus, IconTrash, IconInfoCircle, IconDownload, IconUpload } from '@tabler/icons-react';
 import { supabase } from '../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
@@ -60,21 +60,47 @@ function ManualInputTab({ events, ticketTypes, selectedEventId, setSelectedEvent
         </Grid>
         <Stack gap="xs" mt="md">
           {guests.map((guest, index) => (
-            <Group key={guest.key} grow>
-              <TextInput placeholder="Email khách mời" value={guest.email} onChange={(e) => handleGuestChange(index, 'email', e.currentTarget.value)} />
-              <TextInput placeholder="Họ và tên" value={guest.fullName} onChange={(e) => handleGuestChange(index, 'fullName', e.currentTarget.value)} />
-              <NumberInput value={guest.quantity} onChange={(val) => handleGuestChange(index, 'quantity', val || 1)} min={1} />
-              <ActionIcon color="red" variant="subtle" onClick={() => removeGuestRow(index)}><IconTrash /></ActionIcon>
-            </Group>
+            <Flex key={guest.key} gap="md" align="center">
+              <TextInput
+                placeholder="Email"
+                value={guest.email}
+                onChange={(e) =>
+                  handleGuestChange(index, "email", e.currentTarget.value)
+                }
+                style={{ flex: 2 }}
+              />
+              <TextInput
+                placeholder="Họ và tên"
+                value={guest.fullName}
+                onChange={(e) =>
+                  handleGuestChange(index, "fullName", e.currentTarget.value)
+                }
+                style={{ flex: 2 }}
+              />
+              <NumberInput
+                value={guest.quantity}
+                onChange={(val) => handleGuestChange(index, "quantity", val || 1)}
+                min={1}
+                style={{ width: 100 }}
+              />
+              <ActionIcon
+                color="red"
+                variant="subtle"
+                onClick={() => removeGuestRow(index)}
+              >
+                <IconTrash />
+              </ActionIcon>
+            </Flex>
+
           ))}
         </Stack>
-        <Button onClick={addGuestRow} variant="light" leftSection={<IconPlus size={16} />} style={{ alignSelf: 'flex-start' }}>Thêm khách mời</Button>
+        <Button onClick={addGuestRow} variant="light" leftSection={<IconPlus size={16} />} style={{ alignSelf: 'flex-start' }}>Thêm</Button>
         <Divider />
         <Group justify="space-between">
           <Text fw={500}>Tổng số vé sẽ tạo: {totalTickets}</Text>
           <Button onClick={handleSubmit} loading={loading} disabled={!selectedEventId || !selectedTicketTypeId || totalTickets === 0 || totalTickets > MAX_INVITED_TICKETS}>Gửi {totalTickets} vé mời</Button>
         </Group>
-        {totalTickets > MAX_INVITED_TICKETS && <Alert color="red" title="Quá giới hạn" icon={<IconInfoCircle/>}>Bạn chỉ có thể tạo tối đa {MAX_INVITED_TICKETS} vé trong một lần.</Alert>}
+        {totalTickets > MAX_INVITED_TICKETS && <Alert color="red" title="Quá giới hạn" icon={<IconInfoCircle />}>Bạn chỉ có thể tạo tối đa {MAX_INVITED_TICKETS} vé trong một lần.</Alert>}
       </Stack>
     </Paper>
   );
@@ -100,7 +126,7 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json: any[] = XLSX.utils.sheet_to_json(worksheet);
-      
+
       // Chuyển đổi key và kiểu dữ liệu
       const parsedGuests = json.map(row => ({
         email: String(row.email || ''),
@@ -119,7 +145,7 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
     XLSX.utils.book_append_sheet(workbook, worksheet, 'MauVeMoi');
     XLSX.writeFile(workbook, 'MauVeMoi.xlsx');
   };
-  
+
   const handleSubmit = async () => {
     setLoading(true);
     // Lấy danh sách khách mời đã được đọc từ file
@@ -154,13 +180,13 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
   return (
     <Paper withBorder p="md" radius="md">
       <Stack>
-        <Button onClick={handleDownloadTemplate} variant="light" leftSection={<IconDownload size={16} />} style={{ alignSelf: 'flex-start' }}>Tải file mẫu</Button>
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6 }}><Select required label="Chọn sự kiện" data={events} value={selectedEventId} onChange={setSelectedEventId} searchable /></Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6 }}><Select required label="Chọn loại vé" data={ticketTypes} value={selectedTicketTypeId} onChange={setSelectedTicketTypeId} disabled={!selectedEventId} searchable /></Grid.Col>
-        </Grid>
-        <FileInput label="Tải lên file Excel" placeholder="Chọn file..." value={file} onChange={handleFileChange} accept=".xlsx, .xls" leftSection={<IconUpload size={16}/>} />
-        
+        <Flex gap="xs" mt="md">
+          <Select required label="Chọn sự kiện" data={events} value={selectedEventId} onChange={setSelectedEventId} searchable flex={2} />
+          <Select required label="Chọn loại vé" data={ticketTypes} value={selectedTicketTypeId} onChange={setSelectedTicketTypeId} disabled={!selectedEventId} searchable flex={2} />
+          <Button onClick={handleDownloadTemplate} variant="light" leftSection={<IconDownload size={16} />} style={{ alignSelf: 'flex-end' }}>Tải file mẫu</Button>
+
+        </Flex>
+        <FileInput label="Tải lên file Excel" placeholder="Chọn file..." value={file} onChange={handleFileChange} accept=".xlsx, .xls" leftSection={<IconUpload size={16} />} />
         {guests.length > 0 && (
           <>
             <Title order={5} mt="md">Xem trước dữ liệu:</Title>
@@ -173,7 +199,7 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
               <Text fw={500}>Tổng số vé sẽ tạo: {totalTickets}</Text>
               <Button onClick={handleSubmit} loading={loading} disabled={!selectedEventId || !selectedTicketTypeId || totalTickets === 0 || totalTickets > MAX_INVITED_TICKETS}>Gửi {totalTickets} vé mời</Button>
             </Group>
-            {totalTickets > MAX_INVITED_TICKETS && <Alert color="red" title="Quá giới hạn" icon={<IconInfoCircle/>}>Bạn chỉ có thể tạo tối đa {MAX_INVITED_TICKETS} vé trong một lần.</Alert>}
+            {totalTickets > MAX_INVITED_TICKETS && <Alert color="red" title="Quá giới hạn" icon={<IconInfoCircle />}>Bạn chỉ có thể tạo tối đa {MAX_INVITED_TICKETS} vé trong một lần.</Alert>}
           </>
         )}
       </Stack>
@@ -195,7 +221,7 @@ export function InvitedTicketsPage() {
     };
     fetchEvents();
   }, []);
-  
+
   useEffect(() => {
     const fetchTicketTypes = async () => {
       if (!selectedEventId) {
@@ -212,12 +238,12 @@ export function InvitedTicketsPage() {
   const commonProps = { events, ticketTypes, selectedEventId, setSelectedEventId, selectedTicketTypeId, setSelectedTicketTypeId };
 
   return (
-    <Container size="xl">
-      <Title order={2} mb="xl">Tạo và Gửi Vé mời</Title>
+    <Container size="md">
+      <Title order={2} mb="xl">Vé mời</Title>
       <Tabs defaultValue="manual">
         <Tabs.List>
           <Tabs.Tab value="manual">Nhập thủ công</Tabs.Tab>
-          <Tabs.Tab value="excel">Nhập từ file Excel</Tabs.Tab>
+          <Tabs.Tab value="excel">Nhập Excel</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="manual" pt="md">
           <ManualInputTab {...commonProps} />
