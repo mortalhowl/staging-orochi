@@ -34,6 +34,7 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
   const [items, setItems] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const clipboard = useClipboard();
 
   useEffect(() => {
@@ -110,38 +111,78 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
     });
   };
 
+  const handleUpdateStatus = async (newStatus: 'paid' | 'failed') => {
+        setActionLoading(true);
+        try {
+            if (newStatus === 'paid') {
+                // Gọi function chuyên dụng cho việc xác nhận
+                const { error } = await supabase.functions.invoke('confirm-sale-transaction', {
+                    body: { transactionId },
+                });
+                if (error) throw error;
+                notifications.show({ title: 'Thành công', message: 'Đã xác nhận thanh toán. Vé đang được gửi đi.' });
+            } else {
+                // Chỉ cập nhật trạng thái cho các trường hợp khác
+                const { error } = await supabase.from('transactions').update({ status: newStatus }).eq('id', transactionId);
+                if (error) throw error;
+                notifications.show({ title: 'Thành công', message: `Đã cập nhật trạng thái thành "${newStatus}".` });
+            }
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleResendTicket = async () => {
+        setActionLoading(true);
+        try {
+            const { error } = await supabase.functions.invoke('resend-ticket', {
+                body: { transactionId },
+            });
+            if (error) throw error;
+            notifications.show({ title: 'Thành công', message: 'Đã gửi lại vé thành công.', color: 'green' });
+        } catch (err: any) {
+            notifications.show({ title: 'Lỗi', message: 'Gửi lại vé thất bại.', color: 'red' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
   // 1. Hàm mới để xử lý gửi lại vé
-  const handleResendTicket = async () => {
-    const notiId = notifications.show({
-      loading: true,
-      title: 'Đang gửi lại vé...',
-      message: 'Vui lòng chờ.',
-      autoClose: false,
-    });
+  // const handleResendTicket = async () => {
+  //   const notiId = notifications.show({
+  //     loading: true,
+  //     title: 'Đang gửi lại vé...',
+  //     message: 'Vui lòng chờ.',
+  //     autoClose: false,
+  //   });
 
-    try {
-      const { error: functionError } = await supabase.functions.invoke('resend-ticket', {
-        body: { transactionId },
-      });
-      if (functionError) throw functionError;
+  //   try {
+  //     const { error: functionError } = await supabase.functions.invoke('resend-ticket', {
+  //       body: { transactionId },
+  //     });
+  //     if (functionError) throw functionError;
 
-      notifications.update({
-        id: notiId,
-        color: 'green',
-        title: 'Thành công',
-        message: 'Đã gửi lại vé thành công cho khách hàng.',
-        autoClose: 5000,
-      });
-    } catch (err: any) {
-      notifications.update({
-        id: notiId,
-        color: 'red',
-        title: 'Thất bại',
-        message: 'Gửi lại vé thất bại. Vui lòng thử lại sau.',
-        autoClose: 5000,
-      });
-    }
-  };
+  //     notifications.update({
+  //       id: notiId,
+  //       color: 'green',
+  //       title: 'Thành công',
+  //       message: 'Đã gửi lại vé thành công cho khách hàng.',
+  //       autoClose: 5000,
+  //     });
+  //   } catch (err: any) {
+  //     notifications.update({
+  //       id: notiId,
+  //       color: 'red',
+  //       title: 'Thất bại',
+  //       message: 'Gửi lại vé thất bại. Vui lòng thử lại sau.',
+  //       autoClose: 5000,
+  //     });
+  //   }
+  // };
 
 
   return (
@@ -196,15 +237,16 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
               </Tabs>
             </Stack>
             {transaction.status === 'pending' && (
-              <Button color="green" onClick={handleConfirmPayment}>
-                Xác nhận đã thanh toán
-              </Button>
-            )}
-            {transaction.status === 'paid' && (
-              <Button variant="light" onClick={handleResendTicket}>
-                Gửi lại vé
-              </Button>
-            )}
+                            <Group grow>
+                                <Button color="red" onClick={() => handleUpdateStatus('failed')} loading={actionLoading}>Đánh dấu Thất bại</Button>
+                                <Button color="green" onClick={() => handleUpdateStatus('paid')} loading={actionLoading}>Xác nhận Thanh toán</Button>
+                            </Group>
+                        )}
+                        {transaction.status === 'paid' && (
+                            <Button variant="light" onClick={handleResendTicket} loading={actionLoading}>
+                                Gửi lại vé
+                            </Button>
+                        )}
           </Stack>
         )}
       </div>

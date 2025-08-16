@@ -107,7 +107,7 @@ export function AdminLayout() {
   // Nav menu content (dùng chung cho Drawer và Navbar)
   const navMenu = (
     <>
-      {navLinks.map((link) =>
+          {navLinks.map((link) =>
         hasPermission(link.moduleCode) && (
           <NavLink
             key={link.href}
@@ -133,12 +133,18 @@ export function AdminLayout() {
             }
             leftSection={<link.icon size={20} />}
             active={location.pathname.startsWith(link.href)}
-            style={{
-              height: rem(36),
-              paddingLeft: sidebarOpened ? rem(8) : rem(10),
-              paddingRight: rem(10),
-              marginBottom: rem(4),
-            }}
+            styles={(_theme, { active }) => ({
+              root: {
+                color: active ? '#fff' : '#008a87',
+                background: active ? '#008a87' : '#fff',
+                height: rem(36),
+                paddingLeft: sidebarOpened ? rem(8) : rem(10),
+                paddingRight: rem(10),
+                marginBottom: rem(4),
+                fontWeight: active ? 800 : 400,
+                borderRadius: rem(4),
+              },
+            })}
           />
         )
       )}
@@ -150,7 +156,7 @@ export function AdminLayout() {
       header={{ height: 60 }}
       navbar={
         !isMobile
-          ? { width: sidebarOpened ? 180 : 57, breakpoint: 0 }
+          ? { width: sidebarOpened ? 150 : 57, breakpoint: 0 }
           : undefined
       }
       padding="md"
@@ -158,7 +164,7 @@ export function AdminLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm" />
+            <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm"/>
             <Link to="/admin/home" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Group>
                 <Image src="/logo.png" alt="Orochi Logo" style={{ width: '30px' }} />
@@ -229,7 +235,7 @@ export function AdminLayout() {
           px={sidebarOpened ? 'xs' : 8}
           py="xs"
           style={{
-            transition: 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             overflowX: 'hidden',
           }}
         >

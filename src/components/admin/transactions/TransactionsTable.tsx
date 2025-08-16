@@ -16,7 +16,7 @@ const statusMapping: { [key: string]: { label: string; color: string } } = {
   pending: { label: 'Chờ xác nhận', color: 'yellow' },
   paid: { label: 'Đã thanh toán', color: 'green' },
   failed: { label: 'Thất bại', color: 'red' },
-  expired: { label: 'Hết hạn', color: 'gray' },
+  // expired: { label: 'Hết hạn', color: 'gray' },
 };
 
 export function TransactionsTable({ transactions, loading, selection, setSelection, onRowClick }: TransactionsTableProps) {
