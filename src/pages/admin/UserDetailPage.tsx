@@ -7,6 +7,7 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { formatDateTime } from '../../utils/formatters';
 import { UserTransactions } from '../../components/admin/users/UserTransactions';
+import { useAuthStore } from '../../store/authStore';
 
 interface Module {
   id: string;
@@ -32,6 +33,8 @@ export function UserDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+    const { hasEditPermission } = useAuthStore();
+  const canEditUsers = hasEditPermission('users');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -186,13 +189,13 @@ export function UserDetailPage() {
         <Tabs.List>
           <Tabs.Tab value="details">Chi tiết Tài khoản</Tabs.Tab>
           <Tabs.Tab value="history">Lịch sử Giao dịch</Tabs.Tab>
-          {(user.role === 'staff' || user.role === 'admin') && <Tabs.Tab value="permissions">Phân quyền</Tabs.Tab>}
+          {(canEditUsers && (user.role === 'staff' || user.role === 'admin')) && <Tabs.Tab value="permissions">Phân quyền</Tabs.Tab>}
         </Tabs.List>
 
         <Tabs.Panel value="details" pt="md">
           <Paper withBorder p="md" radius="md">
             <Stack>
-              {user.role !== 'viewer' && (
+              {canEditUsers && (user.role === 'staff' || user.role === 'admin') && (
                 <>
                   <Flex gap="md" align="center">
                     <PasswordInput label="Đặt mật khẩu mới" value={newPassword} onChange={(e) => setNewPassword(e.currentTarget.value)} style={{ flex: 2 }} />
@@ -204,6 +207,7 @@ export function UserDetailPage() {
               )}
 
               {/* Phần hành động nguy hiểm giờ đây áp dụng cho tất cả các vai trò */}
+              {canEditUsers && (user.role === 'staff' || user.role === 'admin') && (
               <Flex justify="flex-end" gap="md">
                 {user.status === 'active' ? (
                   <Button onClick={() => handleAdminAction('disable_user')} color="orange">Vô hiệu hóa</Button>
@@ -212,6 +216,7 @@ export function UserDetailPage() {
                 )}
                 <Button onClick={() => handleAdminAction('delete_user')} color="red">Xóa tài khoản</Button>
               </Flex>
+              )}
             </Stack>
           </Paper>
         </Tabs.Panel>
@@ -223,7 +228,7 @@ export function UserDetailPage() {
           <Badge color="blue" variant="light" size='xl' mb="md">
             Full permissions for staff users
           </Badge></Tabs.Panel>
-        ) : user.role === 'staff' ? (
+        ) : user.role === 'staff' && canEditUsers ? (
           <Tabs.Panel value="permissions" pt="md">
             <Paper withBorder p="md" radius="md">
               <Table>

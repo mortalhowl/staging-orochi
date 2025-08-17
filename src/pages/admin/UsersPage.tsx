@@ -8,6 +8,7 @@ import { AddStaffModal } from '../../components/admin/users/AddStaffModal';
 import { useDisclosure } from '@mantine/hooks';
 import { UsersToolbar } from '../../components/admin/users/UsersToolbar';
 import { useDebounce } from 'use-debounce';
+import { useAuthStore } from '../../store/authStore';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -20,6 +21,8 @@ export function UsersPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({ search: '', role: null as UserRole | null });
   const [debouncedSearch] = useDebounce(filters.search, 400);
+  const { hasEditPermission } = useAuthStore();
+  const canEditUsers = hasEditPermission('users');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -28,7 +31,7 @@ export function UsersPage() {
       const to = from + ITEMS_PER_PAGE - 1;
 
       const rpcParams = { search_term: debouncedSearch, p_role: filters.role };
-      
+
       const dataPromise = supabase.rpc('search_users', rpcParams).range(from, to);
       const countPromise = supabase.rpc('count_users', rpcParams);
 
@@ -52,7 +55,11 @@ export function UsersPage() {
     <Container size="xl">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Người dùng</Title>
-        <Button onClick={openModal} leftSection={<IconPlus size={16} />}>Thêm nhân viên</Button>
+        {canEditUsers && (
+          <Button onClick={openModal} leftSection={<IconPlus size={16} />}>
+            Thêm nhân viên
+          </Button>
+        )}
       </Group>
 
       <UsersToolbar filters={filters} setFilters={setFilters} />
@@ -63,7 +70,7 @@ export function UsersPage() {
           <Pagination total={Math.ceil(totalItems / ITEMS_PER_PAGE)} value={activePage} onChange={setPage} withEdges />
         </Group>
       </Paper>
-      
+
       <AddStaffModal opened={modalOpened} onClose={closeModal} onSuccess={handleSuccess} />
     </Container>
   );
