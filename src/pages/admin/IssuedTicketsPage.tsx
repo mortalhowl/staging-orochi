@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Title, Paper, Pagination, Group, Button, SimpleGrid, Stack, Text, Container } from '@mantine/core';
+import { Title, Paper, Pagination, Group, Button, SimpleGrid, Stack, Text, Center, Loader, Container } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { TicketsToolbar } from '../../components/admin/tickets/TicketsToolbar';
@@ -11,11 +11,19 @@ import { notifications } from '@mantine/notifications';
 import { IconDownload } from '@tabler/icons-react';
 import * as XLSX from 'xlsx';
 import { formatDateTime } from '../../utils/formatters';
+import { useAuthStore } from '../../store/authStore';
 
 const ITEMS_PER_PAGE = 20;
 
-function TicketsStats({ stats }: { stats: any }) {
-    if (!stats) return null;
+// Component con cho khu vực tổng quan
+function TicketsStats({ stats, loading }: { stats: any, loading: boolean }) {
+    if (loading || !stats) {
+        return (
+            <Paper withBorder p="md" radius="md" mb="md">
+                <Center h={58}><Loader size="sm" /></Center>
+            </Paper>
+        );
+    }
     return (
         <Paper withBorder p="md" radius="md" mb="md">
             <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }}>
@@ -54,12 +62,15 @@ export function IssuedTicketsPage() {
   const [exporting, setExporting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState<any>(null);
+  const { hasEditPermission } = useAuthStore();
+  const canEditTickets = hasEditPermission('tickets');
 
   const [filters, setFilters] = useState({
     search: '',
     eventId: null as string | null,
     isInvite: null as string | null,
     isUsed: null as string | null,
+    status: null as string | null,
   });
   const [debouncedSearch] = useDebounce(filters.search, 400);
 
@@ -72,6 +83,7 @@ export function IssuedTicketsPage() {
         p_event_id: filters.eventId,
         p_is_invite: filters.isInvite === null ? null : filters.isInvite === 'true',
         p_is_used: filters.isUsed === null ? null : filters.isUsed === 'true',
+        p_status: filters.status,
       };
 
       const dataPromise = supabase.rpc('search_issued_tickets', rpcParams)
@@ -94,8 +106,9 @@ export function IssuedTicketsPage() {
       }
       setLoading(false);
     };
+
     fetchPageData();
-  }, [activePage, refreshKey, debouncedSearch, filters.eventId, filters.isInvite, filters.isUsed]);
+  }, [activePage, debouncedSearch, filters.eventId, filters.isInvite, filters.isUsed, filters.status, refreshKey]);
 
   const handleRowClick = (ticketId: string) => {
     setSelectedTicketId(ticketId);
@@ -106,26 +119,26 @@ export function IssuedTicketsPage() {
 
   const handleExport = async () => {
     setExporting(true);
-    // const notifId = notifications.show({ 
-    //     loading: true, 
-    //     title: 'Đang xuất dữ liệu', 
-    //     message: 'Vui lòng chờ...', 
-    //     autoClose: false,
-    //     withCloseButton: false,
-    // });
+    const notifId = notifications.show({ 
+        loading: true, 
+        title: 'Đang xuất dữ liệu', 
+        message: 'Vui lòng chờ...', 
+        autoClose: false,
+        withCloseButton: false,
+    });
     
     const rpcParams = {
         search_term: debouncedSearch,
         p_event_id: filters.eventId,
         p_is_invite: filters.isInvite === null ? null : filters.isInvite === 'true',
         p_is_used: filters.isUsed === null ? null : filters.isUsed === 'true',
+        p_status: filters.status,
     };
 
-    // Lấy tất cả dữ liệu, không phân trang
     const { data, error } = await supabase.rpc('search_issued_tickets', rpcParams);
     
-    if (error || !data) {
-        notifications.update({ id: 'export-tickets', color: 'red', title: 'Thất bại', message: 'Xuất dữ liệu thất bại.' });
+    if (error || !data || data.length === 0) {
+        notifications.update({ id: notifId, color: 'red', title: 'Thất bại', message: 'Xuất dữ liệu thất bại hoặc không có dữ liệu.' });
         setExporting(false);
         return;
     }
@@ -140,6 +153,7 @@ export function IssuedTicketsPage() {
         'Nguồn gốc': ticket.is_invite ? 'Vé mời' : 'Vé bán',
         'Trạng thái': ticket.is_used ? 'Đã check-in' : 'Chưa check-in',
         'Thời gian check-in': ticket.is_used ? formatDateTime(ticket.used_at) : '',
+        'Trạng thái vé': ticket.status === 'active' ? 'Hoạt động' : 'Vô hiệu hóa',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -147,7 +161,7 @@ export function IssuedTicketsPage() {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'DanhSachVe');
     XLSX.writeFile(workbook, `DanhSachVe_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-    // notifications.update({ id: notifId, color: 'green', title: 'Thành công', message: `Đã xuất ${data.length} vé.` });
+    notifications.update({ id: notifId, color: 'green', title: 'Thành công', message: `Đã xuất ${data.length} vé.` });
     setExporting(false);
   };
 
@@ -155,12 +169,14 @@ export function IssuedTicketsPage() {
     <Container size="xl">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Quản lý Vé</Title>
-        <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16}/>}>
-            Xuất Excel
-        </Button>
+        {canEditTickets && (
+            <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16}/>}>
+                Xuất Excel
+            </Button>
+        )}
       </Group>
       
-      <TicketsStats stats={stats} />
+      <TicketsStats stats={stats} loading={loading} />
       <TicketsToolbar filters={filters} setFilters={setFilters} />
 
       <Paper withBorder p="md" radius="md">
@@ -175,7 +191,7 @@ export function IssuedTicketsPage() {
         </Group>
       </Paper>
 
-      <TicketDetailDrawer ticketId={selectedTicketId} opened={drawerOpened} onClose={closeDrawer} onSuccess={handleSuccess} />
+      <TicketDetailDrawer ticketId={selectedTicketId} opened={drawerOpened} onClose={closeDrawer} onSuccess={handleSuccess} canEdit={canEditTickets}/>
     </Container>
   );
 }

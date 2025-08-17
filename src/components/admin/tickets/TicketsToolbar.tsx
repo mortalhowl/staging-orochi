@@ -1,5 +1,5 @@
-import { SimpleGrid, TextInput, Select } from '@mantine/core';
-import { IconSearch } from '@tabler/icons-react';
+import { Grid, TextInput, Select, ActionIcon, SimpleGrid } from '@mantine/core';
+import { IconSearch, IconX } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabaseClient';
 
@@ -20,40 +20,64 @@ export function TicketsToolbar({ filters, setFilters }: TicketsToolbarProps) {
     };
     fetchEvents();
   }, []);
-  
+
   const handleFilterChange = (key: string, value: any) => {
     setFilters((prev: any) => ({ ...prev, [key]: value }));
   };
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} mb="md">
+    <Grid gutter="md" mb="md">
+    <Grid.Col span={{ base: 12, md: 6 }}>
       <TextInput
         placeholder="Tìm Mã vé, Tên, Email..."
         leftSection={<IconSearch size={16} />}
         value={filters.search}
         onChange={(e) => handleFilterChange('search', e.currentTarget.value)}
+        rightSection={
+          filters.search ? (
+            <ActionIcon
+              variant="subtle"
+              onClick={() => handleFilterChange('search', '')}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          ) : null
+        }
       />
+    </Grid.Col>
+    <Grid.Col span={{ base: 12, md: 6 }}>
+      <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
       <Select
-        placeholder="Lọc theo sự kiện"
+        placeholder="Sự kiện"
         data={events}
         value={filters.eventId}
         onChange={(value) => handleFilterChange('eventId', value)}
         clearable
       />
       <Select
-        placeholder="Lọc theo nguồn gốc"
-        data={[ { value: 'false', label: 'Vé bán' }, { value: 'true', label: 'Vé mời' } ]}
+        placeholder="Nguồn gốc"
+        data={[{ value: 'false', label: 'Vé bán' }, { value: 'true', label: 'Vé mời' }]}
         value={filters.isInvite}
         onChange={(value) => handleFilterChange('isInvite', value)}
         clearable
       />
       <Select
-        placeholder="Lọc theo trạng thái"
-        data={[ { value: 'false', label: 'Chưa check-in' }, { value: 'true', label: 'Đã check-in' } ]}
+        placeholder="Check-in"
+        data={[{ value: 'false', label: 'Chưa check-in' }, { value: 'true', label: 'Đã check-in' }]}
         value={filters.isUsed}
         onChange={(value) => handleFilterChange('isUsed', value)}
         clearable
       />
-    </SimpleGrid>
+      {/* Thêm bộ lọc trạng thái mới */}
+      <Select
+        placeholder="Trạng thái"
+        data={[{ value: 'active', label: 'Hoạt động' }, { value: 'disabled', label: 'Vô hiệu hóa' }]}
+        value={filters.status}
+        onChange={(value) => handleFilterChange('status', value)}
+        clearable
+      />
+      </SimpleGrid>
+    </Grid.Col>
+    </Grid>
   );
 }

@@ -1,4 +1,4 @@
-import { Table, LoadingOverlay, Text, Badge, Tooltip, ActionIcon, Group, Avatar, Box } from '@mantine/core';
+import { Table, LoadingOverlay, Text, Badge, Tooltip, ActionIcon, Group, Avatar, Box, ScrollArea } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { IconCopy } from '@tabler/icons-react';
 // import { formatDateTime } from '../../../utils/formatters';
@@ -13,6 +13,7 @@ export interface FullTicketDetails {
   customer_email: string;
   event_name: string;
   ticket_type_name: string;
+  status: 'active' | 'disabled';
 }
 
 interface TicketsTableProps {
@@ -71,13 +72,19 @@ export function TicketsTable({ tickets, loading, onRowClick }: TicketsTableProps
           {/* (${formatDateTime(ticket.used_at)}) */}
         </Badge>
       </Table.Td>
+      <Table.Td>
+        <Badge color={ticket.status === 'active' ? 'teal' : 'red'}>
+          {ticket.status === 'active' ? 'Hoạt động' : 'Vô hiệu hóa'}
+        </Badge>
+      </Table.Td>
     </Table.Tr>
   ));
 
   return (
     <div style={{ position: 'relative' }}>
       <LoadingOverlay visible={loading} />
-      <Table striped highlightOnHover withTableBorder>
+      <ScrollArea>
+      <Table striped highlightOnHover withTableBorder miw={1200}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Mã vé</Table.Th>
@@ -85,13 +92,15 @@ export function TicketsTable({ tickets, loading, onRowClick }: TicketsTableProps
             <Table.Th>Sự kiện</Table.Th>
             <Table.Th>Loại vé</Table.Th>
             <Table.Th>Nguồn gốc</Table.Th>
-            <Table.Th>Trạng thái</Table.Th>
+            <Table.Th>Check-in</Table.Th>
+            <Table.Th>Trạng thái vé</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={7} align="center">Không tìm thấy vé nào.</Table.Td></Table.Tr>}
         </Table.Tbody>
       </Table>
+      </ScrollArea>
     </div>
   );
 }

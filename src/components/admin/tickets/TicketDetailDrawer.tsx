@@ -13,9 +13,10 @@ interface TicketDetailDrawerProps {
   opened: boolean;
   onClose: () => void;
   onSuccess: () => void; // Thêm callback để refresh
+  canEdit: boolean; // Thêm prop để kiểm tra quyền chỉnh sửa
 }
 
-export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: TicketDetailDrawerProps) {
+export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess, canEdit }: TicketDetailDrawerProps) {
   const [ticket, setTicket] = useState<FullTicketDetails | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,13 +105,14 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess }: Tic
               )}
             </Stack>
           </Stack>
-          <Stack>
-            {ticket.status === 'active' ? (
-              <Button color="orange" onClick={() => handleUpdateStatus('disabled')} loading={actionLoading}>Vô hiệu hóa vé</Button>
-            ) : (
-              <Button color="teal" onClick={() => handleUpdateStatus('active')} loading={actionLoading}>Kích hoạt lại vé</Button>
-            )}
-          </Stack>
+          {canEdit && (
+            <Stack>
+              {ticket.status === 'active' ? (
+                <Button color="orange" onClick={() => handleUpdateStatus('disabled')} loading={actionLoading}>Vô hiệu hóa vé</Button>
+              ) : (
+                <Button color="teal" onClick={() => handleUpdateStatus('active')} loading={actionLoading}>Kích hoạt lại vé</Button>
+              )}
+            </Stack>)}
         </Stack>
       )}
     </Drawer>
