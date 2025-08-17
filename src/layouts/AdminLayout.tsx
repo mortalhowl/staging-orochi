@@ -24,11 +24,11 @@ import {
   IconMoon,
   IconSettings,
   IconBook,
-  IconShoppingCart,
   IconGift,
   IconTicketOff,
   IconScan,
   IconUsers,
+  IconTransactionDollar
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -42,7 +42,7 @@ const navLinks = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: IconHome2, moduleCode: 'dashboard' },
   { href: '/admin/events', label: 'Sự kiện', icon: IconTicket, moduleCode: 'events' },
   { href: '/admin/articles', label: 'Bài viết', icon: IconBook, moduleCode: 'articles' },
-  { href: '/admin/transactions', label: 'Đơn hàng', icon: IconShoppingCart, moduleCode: 'transactions' },
+  { href: '/admin/transactions', label: 'Giao dịch', icon: IconTransactionDollar, moduleCode: 'transactions' },
   { href: '/admin/invited-tickets', label: 'Vé mời', icon: IconGift, moduleCode: 'invited-tickets' },
   { href: '/admin/tickets', label: 'Quản lý Vé', icon: IconTicketOff, moduleCode: 'tickets' },
   { href: '/admin/check-in', label: 'Check-in', icon: IconScan, moduleCode: 'check-in' },

@@ -10,6 +10,7 @@ interface TransactionsTableProps {
   selection: string[];
   setSelection: (selection: string[]) => void;
   onRowClick: (transactionId: string) => void;
+  canEdit: boolean;
 }
 
 const statusMapping: { [key: string]: { label: string; color: string } } = {
@@ -19,7 +20,7 @@ const statusMapping: { [key: string]: { label: string; color: string } } = {
   // expired: { label: 'Hết hạn', color: 'gray' },
 };
 
-export function TransactionsTable({ transactions, loading, selection, setSelection, onRowClick }: TransactionsTableProps) {
+export function TransactionsTable({ transactions, loading, selection, setSelection, onRowClick, canEdit }: TransactionsTableProps) {
   const clipboard = useClipboard();
 
   // Lọc ra các ID có thể được chọn (chỉ những giao dịch pending)
@@ -31,7 +32,8 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
 
   const rows = transactions.map((trans) => (
     <Table.Tr key={trans.id} onClick={() => onRowClick(trans.id)} style={{ cursor: 'pointer' }}>
-      <Table.Td onClick={(e) => e.stopPropagation()}>
+      {canEdit && (<Table.Td onClick={(e) => e.stopPropagation()}>
+
         <Checkbox
           aria-label="Select row"
           checked={selection.includes(trans.id)}
@@ -44,7 +46,7 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
             )
           }
         />
-      </Table.Td>
+      </Table.Td>)}
       <Table.Td>
         <Group gap="xs" wrap="nowrap">
           <Tooltip label={trans.id}>
@@ -98,14 +100,15 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
         <Table striped highlightOnHover withTableBorder miw={1200}>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: 40 }}>
-                <Checkbox
-                  aria-label="Select all rows"
-                  onChange={(e) => handleSelectAll(e.currentTarget.checked)}
-                  checked={selectableIds.length > 0 && selection.length === selectableIds.length}
-                  indeterminate={selection.length > 0 && selection.length < selectableIds.length}
-                />
-              </Table.Th>
+              {canEdit && (
+                <Table.Th style={{ width: 40 }}>
+                  <Checkbox
+                    aria-label="Select all rows"
+                    onChange={(e) => handleSelectAll(e.currentTarget.checked)}
+                    checked={selectableIds.length > 0 && selection.length === selectableIds.length}
+                    indeterminate={selection.length > 0 && selection.length < selectableIds.length}
+                  />
+                </Table.Th>)}
               <Table.Th>Mã ĐH</Table.Th>
               <Table.Th>Khách hàng</Table.Th>
               <Table.Th>Sự kiện</Table.Th>

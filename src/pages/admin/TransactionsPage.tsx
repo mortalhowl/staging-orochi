@@ -11,6 +11,7 @@ import type { TransactionWithDetails as TWD } from '../../types';
 import { notifications } from '@mantine/notifications';
 import { IconDownload } from '@tabler/icons-react';
 import * as XLSX from 'xlsx';
+import { useAuthStore } from '../../store/authStore';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -67,6 +68,8 @@ const [transactions, setTransactions] = useState<TWD[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selection, setSelection] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  const { hasEditPermission } = useAuthStore();
+  const canEditTransactions = hasEditPermission('transactions');
 
   const [filters, setFilters] = useState({
     search: '',
@@ -207,7 +210,7 @@ const handleSuccess = () => setRefreshKey(k => k + 1);
   return (
     <Container size="xl" py="md">
       <Group justify="space-between" mb="xl">
-        <Title order={2}>Quản lý Đơn hàng</Title>
+        <Title order={2}>Giao dịch</Title>
         <Button onClick={handleExport} loading={exporting} leftSection={<IconDownload size={16} />}>
           Xuất Excel
         </Button>
@@ -217,7 +220,7 @@ const handleSuccess = () => setRefreshKey(k => k + 1);
       <TransactionsToolbar filters={filters} setFilters={setFilters} />
 
       <Paper withBorder p="md" radius="md">
-        {selection.length > 0 && (
+        {canEditTransactions && selection.length > 0 && (
           <TransactionsToolbarBulk
             selection={selection}
             onSuccess={handleSuccess}
@@ -229,6 +232,7 @@ const handleSuccess = () => setRefreshKey(k => k + 1);
           selection={selection}
           setSelection={setSelection}
           onRowClick={handleRowClick}
+          canEdit={canEditTransactions}
         />
         <Group justify="center" mt="md">
           <Pagination
@@ -248,6 +252,7 @@ const handleSuccess = () => setRefreshKey(k => k + 1);
         opened={drawerOpened}
         onClose={closeDrawer}
         onSuccess={handleSuccess}
+        canEdit={canEditTransactions}
       />
     </Container>
   );

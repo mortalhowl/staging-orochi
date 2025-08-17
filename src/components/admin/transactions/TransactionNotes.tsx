@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Textarea, Button, Group, Text, Paper, Avatar, Loader, Center } from '@mantine/core';
+import { Stack, Textarea, Button, Group, Text, Paper, Avatar, Loader, Center, ScrollArea } from '@mantine/core';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuthStore } from '../../../store/authStore';
 import { notifications } from '@mantine/notifications';
@@ -33,7 +33,7 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
       .from('transaction_notes')
       .select('*, users(full_name, avatar_url)')
       .eq('transaction_id', transactionId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error("Error fetching notes:", error);
@@ -74,21 +74,51 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
   }
 
   return (
-    <Stack>
+    <Stack justify="space-between" h="calc(80vh - 100px)">
+      <ScrollArea>
       <Stack gap="xs">
-        {notes.map(note => (
-          <Paper key={note.id} withBorder p="sm" radius="sm">
-            <Text size="sm">{note.note}</Text>
-            <Group justify="flex-end" gap="xs" mt="xs">
-              <Avatar src={note.users?.avatar_url} size={20} radius="xl" />
-              <Text size="xs" c="dimmed">{note.users?.full_name || 'Không rõ'} - {formatDateTime(note.created_at)}</Text>
+        {notes.map((note) => {
+          const isMine = note.users?.full_name === userProfile?.full_name;
+
+          return (
+            <Group
+              key={note.id}
+              align="flex-start"
+              justify={isMine ? 'flex-end' : 'flex-start'}
+              style={{ width: '95%' }}
+            >
+              {!isMine && <Avatar src={note.users?.avatar_url} size="md" radius="xl" />}
+
+              <Stack
+                gap={4}
+                align={isMine ? 'flex-end' : 'flex-start'}
+                style={{ maxWidth: '70%' }}
+              >
+                <Paper
+                  p="9px"
+                  radius="xl"
+                  style={{
+                    backgroundColor: isMine ? '#228be6' : '#f1f3f5',
+                    color: isMine ? 'white' : 'black',
+                  }}
+                >
+                  <Text size="sm">{note.note}</Text>
+                </Paper>
+                <Text size="xs" c="dimmed">
+                  {note.users?.full_name || 'Không rõ'} - {formatDateTime(note.created_at)}
+                </Text>
+              </Stack>
+
+              {isMine && <Avatar src={note.users?.avatar_url} size="md" radius="xl" />}
             </Group>
-          </Paper>
-        ))}
+          );
+        })}
+
         {notes.length === 0 && <Text c="dimmed" ta="center">Chưa có ghi chú nào.</Text>}
       </Stack>
+      </ScrollArea>
 
-      <Group mt="md" gap="xs" align="flex-start" wrap="nowrap" style={{ width: '100%' }}>
+      <Group mt="md" gap="xs" align="flex-end" wrap="nowrap" style={{ width: '100%' }}>
         <Textarea
           placeholder="Nhập ghi chú nội bộ..."
           value={newNote}
@@ -96,7 +126,7 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
           minRows={1}
           autosize
           w="100%"
-          radius="sm"
+          radius="xl"
           styles={{
             input: { fontSize: 14 },
           }}
@@ -104,7 +134,7 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
         <Button
           onClick={handleAddNote}
           loading={submitting}
-          radius="sm"
+          radius="xl"
           px="sm"
           style={{
             alignSelf: 'stretch', // cao bằng Textarea
@@ -114,7 +144,6 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
           <IconSend size={18} />
         </Button>
       </Group>
-
     </Stack>
   );
 }
