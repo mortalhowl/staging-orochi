@@ -166,7 +166,7 @@ export function IssuedTicketsPage() {
   };
 
   return (
-    <Container size="xl">
+    <Container size="xl" mt="md">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Quản lý Vé</Title>
         {canEditTickets && (

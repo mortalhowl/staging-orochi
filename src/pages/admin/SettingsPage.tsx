@@ -23,8 +23,8 @@ export function SettingsPage() {
   ));
 
   return (
-    <Container>
-      <Title order={2} mb="xl">Cài đặt Hệ thống</Title>
+    <Container size="lg" mt="md">
+      <Title order={2} mb="xl">Cài đặt</Title>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
         {cards}
       </SimpleGrid>

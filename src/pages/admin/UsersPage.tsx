@@ -52,7 +52,7 @@ export function UsersPage() {
   const handleSuccess = () => setRefreshKey(k => k + 1);
 
   return (
-    <Container size="xl">
+    <Container size="xl" mt="md">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Người dùng</Title>
         {canEditUsers && (

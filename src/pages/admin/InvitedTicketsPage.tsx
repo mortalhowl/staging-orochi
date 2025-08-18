@@ -238,7 +238,7 @@ export function InvitedTicketsPage() {
   const commonProps = { events, ticketTypes, selectedEventId, setSelectedEventId, selectedTicketTypeId, setSelectedTicketTypeId };
 
   return (
-    <Container size="md">
+    <Container size="md" mt="md">
       <Title order={2} mb="xl">Vé mời</Title>
       <Tabs defaultValue="manual">
         <Tabs.List>

@@ -4,10 +4,9 @@ import { Center, Loader } from '@mantine/core';
 
 interface PermissionGuardProps {
   moduleCode: string;
-  requireEdit?: boolean; // Tùy chọn: yêu cầu quyền sửa
 }
 
-export function PermissionGuard({ moduleCode, requireEdit = false }: PermissionGuardProps) {
+export function PermissionGuard({ moduleCode }: PermissionGuardProps) {
   const { userProfile, permissions, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -19,17 +18,17 @@ export function PermissionGuard({ moduleCode, requireEdit = false }: PermissionG
     return <Outlet />;
   }
 
+  // KIỂM TRA MỚI: Các module chỉ dành cho admin
+  if (moduleCode === 'dashboard' || moduleCode === 'settings') {
+    // Nếu không phải admin, từ chối ngay lập tức
+    return <Navigate to="/admin/forbidden" replace />;
+  }
+
   // Nếu là staff, kiểm tra quyền chi tiết
   if (userProfile?.role === 'staff') {
     const permission = permissions.find(p => p.moduleCode === moduleCode);
-
-    // Kiểm tra quyền xem
-    if (!requireEdit && permission?.canView) {
-      return <Outlet />;
-    }
-
-    // Kiểm tra quyền sửa (nếu được yêu cầu)
-    if (requireEdit && permission?.canEdit) {
+    // Chỉ cần kiểm tra quyền xem (canView)
+    if (permission?.canView) {
       return <Outlet />;
     }
   }

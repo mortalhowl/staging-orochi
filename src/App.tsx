@@ -39,6 +39,8 @@ import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { ArticleDetailPage } from './pages/ArticleDetailPage';
 import { ProfilePage } from './pages/admin/ProfilePage'; 
 import { CompanyInfoPage } from './pages/admin/CompanyInfoPage';
+import { VouchersPage } from './pages/admin/VouchersPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App() {
 
@@ -96,6 +98,10 @@ export function App() {
             <Route element={<PermissionGuard moduleCode="check-in" />}>
               <Route path="/admin/check-in" element={<CheckInPage />} />
             </Route>
+            <Route element={<PermissionGuard moduleCode="vouchers" />}>
+              <Route path="/admin/vouchers" element={<VouchersPage />} />
+            </Route>
+            <Route path="/admin/vouchers" element={<VouchersPage />} />
             <Route element={<PermissionGuard moduleCode="users" />}>
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/users/:userId" element={<UserDetailPage />} />
@@ -109,6 +115,8 @@ export function App() {
             </Route>
           </Route>
         </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

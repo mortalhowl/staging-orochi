@@ -82,7 +82,7 @@ return (
                 indeterminate={selection.length > 0 && selection.length !== events.length}
               />
             </Table.Th>)}
-            <Th sorted={sorting.column === 'title'} reversed={sorting.direction === 'desc'} onSort={() => setSort('title')}>
+            <Th sorted={sorting.column === 'title'} reversed={sorting.direction === 'desc'} onSort={() => setSort('title')} >
               Tên sự kiện
             </Th>
             <Table.Th>Thời gian bắt đầu</Table.Th>

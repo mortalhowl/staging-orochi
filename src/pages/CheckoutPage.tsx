@@ -1,84 +1,154 @@
-import { Container, Title, Paper, Grid, Stack, Text, Divider, Button, Group, Avatar } from '@mantine/core';
+import { Container, Title, Paper, Grid, Stack, Text, Divider, Button, Group, Avatar, TextInput, ActionIcon } from '@mantine/core';
 import { useCartStore } from '../store/cartStore';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
-import { IconBrandGoogle } from '@tabler/icons-react';
-import type { User } from '@supabase/supabase-js'; // 1. Import kiểu User
+import { IconBrandGoogle, IconTicket, IconX } from '@tabler/icons-react';
+import type { User } from '@supabase/supabase-js';
+import type { UserProfile } from '../types';
 
 export function CheckoutPage() {
-  const { event, cart, totalAmount, totalTickets, clearCart } = useCartStore();
+  // Lấy state và actions từ "kho" giỏ hàng
+  const { event, cart, totalAmount, totalTickets, appliedVoucher, finalAmount, applyVoucher, removeVoucher, clearCart } = useCartStore();
   const navigate = useNavigate();
+  
+  // State cho các hành động trên trang
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null); // 2. State để lưu thông tin user
+  const [voucherLoading, setVoucherLoading] = useState(false);
+
+  // State cho thông tin người dùng
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  
+  // State cho các ô nhập liệu
+  const [voucherCode, setVoucherCode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkSession = async () => {
+    const checkSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null); // 3. Lưu object user vào state
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const { data: profileData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profileData) {
+          setUserProfile(profileData);
+          setPhone(profileData.phone || '');
+        }
+      }
       setSessionChecked(true);
     };
-    checkSession();
+    checkSessionAndProfile();
   }, []);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    setVoucherLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-voucher', {
+        body: {
+          voucherCode,
+          orderAmount: totalAmount,
+          eventId: event!.id,
+        },
+      });
+      if (error) {
+        const errorBody = JSON.parse(error.context.body);
+        throw new Error(errorBody.error);
+      }
+      
+      applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
+      notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
+    } catch (err: any) {
+      notifications.show({ title: 'Áp dụng thất bại', message: err.message, color: 'red' });
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const validatePhone = (phoneNumber: string): boolean => {
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneNumber) {
+        setPhoneError('Vui lòng nhập số điện thoại.');
+        return false;
+    }
+    if (!phoneRegex.test(phoneNumber)) {
+        setPhoneError('Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và có 10 chữ số).');
+        return false;
+    }
+    setPhoneError(null);
+    return true;
+  };
 
   const handleCheckout = async () => {
     setLoading(true);
-
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.href,
-        },
+        options: { redirectTo: window.location.href },
       });
       setLoading(false);
       return;
     }
 
+    if (!validatePhone(phone)) {
+        setLoading(false);
+        return;
+    }
+
     try {
-      // 1. Tạo bản ghi cha trong `transactions`
+      if (phone !== userProfile?.phone) {
+        const { error: updateError } = await supabase.from('users').update({ phone }).eq('id', session.user.id);
+        if (updateError) throw updateError;
+      }
+
       const transactionData = {
         user_id: session.user.id,
         event_id: event!.id,
-        total_amount: totalAmount,
+        total_amount: finalAmount,
         status: 'pending',
+        applied_voucher_id: appliedVoucher?.voucher.id || null,
+        discount_amount: appliedVoucher?.discountAmount || 0,
       };
 
-      const { data: transaction, error: transactionError } = await supabase
-        .from('transactions')
-        .insert(transactionData)
-        .select()
-        .single();
-
+      const { data: transaction, error: transactionError } = await supabase.from('transactions').insert(transactionData).select().single();
       if (transactionError) throw transactionError;
 
-      // 2. Chuẩn bị dữ liệu cho các bản ghi con trong `transaction_items`
       const transactionItems = Object.entries(cart).map(([ticketTypeId, quantity]) => {
         const ticketInfo = event!.ticket_types.find(t => t.id === ticketTypeId);
         return {
-          transaction_id: transaction.id, // Liên kết với giao dịch cha
+          transaction_id: transaction.id,
           ticket_type_id: ticketTypeId,
           quantity: quantity,
-          price: ticketInfo!.price, // Lưu lại giá tại thời điểm mua
+          price: ticketInfo!.price,
         };
       });
 
-      // 3. Insert tất cả các mục vào `transaction_items`
       const { error: itemsError } = await supabase.from('transaction_items').insert(transactionItems);
-
       if (itemsError) throw itemsError;
 
-      // 4. Điều hướng và dọn dẹp
+      if (appliedVoucher) {
+        const { error: voucherError } = await supabase.rpc('increment_voucher_usage', {
+            p_voucher_id: appliedVoucher.voucher.id
+        });
+        if (voucherError) console.error("Failed to increment voucher usage:", voucherError);
+      }
+
       navigate(`/payment/${transaction.id}`);
       clearCart();
-
     } catch (err: any) {
       notifications.show({ title: 'Lỗi', message: 'Không thể tạo giao dịch. Vui lòng thử lại.', color: 'red' });
-      setLoading(false); // Chỉ set loading false khi có lỗi
+      setLoading(false);
     }
   };
 
@@ -86,12 +156,10 @@ export function CheckoutPage() {
     return <Navigate to="/" />;
   }
 
-  // Nếu `event` vẫn là null sau khi kiểm tra (trường hợp hiếm), return để tránh lỗi
   if (!event) {
-    return null; // Hoặc một component Loading/Error khác
+    return null;
   }
 
-  // Logic ticketDetails giờ đây đã an toàn vì `event` chắc chắn tồn tại
   const ticketDetails = Object.entries(cart).map(([ticketId, quantity]) => {
     const ticketInfo = event.ticket_types.find(t => t.id === ticketId);
     if (!ticketInfo) return null;
@@ -109,7 +177,6 @@ export function CheckoutPage() {
       <Grid>
         <Grid.Col span={{ base: 12, md: 8 }}>
           <Paper withBorder p="md" radius="md">
-            {/* Dòng này giờ cũng an toàn */}
             <Title order={4} mb="sm">Sự kiện: {event.title}</Title>
             <Stack>
               {ticketDetails.map((item) => (
@@ -120,41 +187,79 @@ export function CheckoutPage() {
               ))}
               <Divider />
               <Group justify="space-between">
+                <Text>Tạm tính</Text>
+                <Text>{totalAmount.toLocaleString('vi-VN')}đ</Text>
+              </Group>
+              {appliedVoucher && (
+                <Group justify="space-between">
+                  <Group gap="xs">
+                    <IconTicket size={16} color="green" />
+                    <Text c="green">Giảm giá ({appliedVoucher.voucher.code})</Text>
+                    <ActionIcon variant="transparent" color="red" size="sm" onClick={removeVoucher}><IconX/></ActionIcon>
+                  </Group>
+                  <Text c="green">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')}đ</Text>
+                </Group>
+              )}
+              <Divider />
+              <Group justify="space-between">
                 <Text fw={700} size="lg">Tổng cộng</Text>
-                <Text fw={700} size="lg">{totalAmount.toLocaleString('vi-VN')}đ</Text>
+                <Text fw={700} size="lg">{finalAmount.toLocaleString('vi-VN')}đ</Text>
               </Group>
             </Stack>
           </Paper>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 4 }}>
-          <Paper withBorder p="md" radius="md">
-            <Stack>
-              <Title order={4}>Thông tin khách hàng</Title>
-              {sessionChecked && user ? (
+          <Stack>
+            <Paper withBorder p="md" radius="md">
                 <Group>
-                  <Avatar src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name} radius="xl" />
-                  <div>
-                    <Text size="sm" fw={500}>{user.user_metadata.full_name}</Text>
-                    <Text size="xs" c="dimmed">{user.email}</Text>
-                  </div>
+                    <TextInput
+                        placeholder="Nhập mã giảm giá"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.currentTarget.value.toUpperCase())}
+                        style={{ flex: 1 }}
+                    />
+                    <Button onClick={handleApplyVoucher} loading={voucherLoading}>Áp dụng</Button>
                 </Group>
-              ) : (
-                <Text size="sm">Bạn cần đăng nhập để hoàn tất đơn hàng.</Text>
-              )}
-
-              <Button
-                size="lg"
-                bg="#008a87"             
-                onClick={handleCheckout}
-                loading={loading}
-                leftSection={!user && <IconBrandGoogle size={18} 
-                />}
-              >
-                {/* {user ? 'Xác nhận và Lấy mã thanh toán' : 'Đăng nhập & Tiếp tục'} */}
-                Xác nhận
-              </Button>
-            </Stack>
-          </Paper>
+            </Paper>
+            <Paper withBorder p="md" radius="md">
+              <Stack>
+                <Title order={4}>Thông tin khách hàng</Title>
+                {sessionChecked && user ? (
+                  <>
+                    <Group>
+                      <Avatar src={user.user_metadata.avatar_url} alt={userProfile?.full_name || ''} radius="xl" />
+                      <div>
+                        <Text size="sm" fw={500}>{userProfile?.full_name || user.user_metadata.full_name}</Text>
+                        <Text size="xs" c="dimmed">{user.email}</Text>
+                      </div>
+                    </Group>
+                    <TextInput
+                      required
+                      label="Số điện thoại"
+                      placeholder="0123456789"
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.currentTarget.value);
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      error={phoneError}
+                    />
+                  </>
+                ) : (
+                  <Text size="sm">Bạn cần đăng nhập để hoàn tất đơn hàng.</Text>
+                )}
+                <Button
+                  size="lg"
+                  bg="#008a87"
+                  onClick={handleCheckout}
+                  loading={loading}
+                  leftSection={!user && <IconBrandGoogle size={18} />}
+                >
+                  {user ? 'Xác nhận và Lấy mã thanh toán' : 'Đăng nhập & Tiếp tục'}
+                </Button>
+              </Stack>
+            </Paper>
+          </Stack>
         </Grid.Col>
       </Grid>
     </Container>

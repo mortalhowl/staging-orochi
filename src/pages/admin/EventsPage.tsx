@@ -57,7 +57,7 @@ export function EventsPage() {
       // 2. Query để đếm tổng số lượng bằng RPC
       const countParams = {
         search_term: debouncedSearchTerm,
-        p_is_active: statusFilter === null || statusFilter === 'all' ? null : statusFilter === 'active',
+        p_is_active: statusFilter === null ? null : statusFilter === 'active',
       };
       const countPromise = supabase.rpc('count_events', countParams);
 
@@ -85,7 +85,7 @@ export function EventsPage() {
   const handleCloseModal = () => { closeModal(); setEventToEdit(null); };
 
   return (
-    <Container size="xl">
+    <Container size="xl" mt="md">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Sự kiện</Title>
         {canEditEvents && (
@@ -104,7 +104,7 @@ export function EventsPage() {
           <Select
             placeholder="Lọc theo trạng thái"
             data={[
-              { value: 'all', label: 'Tất cả trạng thái' },
+              
               { value: 'active', label: 'Đang hoạt động' },
               { value: 'inactive', label: 'Đã ẩn' },
             ]}

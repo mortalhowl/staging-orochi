@@ -28,7 +28,8 @@ import {
   IconTicketOff,
   IconScan,
   IconUsers,
-  IconTransactionDollar
+  IconTransactionDollar,
+  IconTag,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -46,6 +47,7 @@ const navLinks = [
   { href: '/admin/invited-tickets', label: 'Vé mời', icon: IconGift, moduleCode: 'invited-tickets' },
   { href: '/admin/tickets', label: 'Quản lý Vé', icon: IconTicketOff, moduleCode: 'tickets' },
   { href: '/admin/check-in', label: 'Check-in', icon: IconScan, moduleCode: 'check-in' },
+  { href: '/admin/vouchers', label: 'Voucher', icon: IconTag, moduleCode: 'vouchers' },
   { href: '/admin/users', label: 'Người dùng', icon: IconUsers, moduleCode: 'users' },
   { href: '/admin/settings', label: 'Cài đặt', icon: IconSettings, moduleCode: 'settings' },
 ];
@@ -107,7 +109,7 @@ export function AdminLayout() {
   // Nav menu content (dùng chung cho Drawer và Navbar)
   const navMenu = (
     <>
-          {navLinks.map((link) =>
+      {navLinks.map((link) =>
         hasPermission(link.moduleCode) && (
           <NavLink
             key={link.href}
@@ -133,10 +135,14 @@ export function AdminLayout() {
             }
             leftSection={<link.icon size={20} />}
             active={location.pathname.startsWith(link.href)}
-            styles={(_theme, { active }) => ({
+            styles={(theme, { active }) => ({
               root: {
                 color: active ? '#fff' : '#008a87',
-                background: active ? '#008a87' : '#fff',
+                backgroundColor: active
+                  ? '#008a87'
+                  : colorScheme === 'dark'
+                    ? theme.colors.dark[7]
+                    : theme.white,
                 height: rem(36),
                 paddingLeft: sidebarOpened ? rem(8) : rem(10),
                 paddingRight: rem(10),
@@ -145,6 +151,7 @@ export function AdminLayout() {
                 borderRadius: rem(4),
               },
             })}
+
           />
         )
       )}
@@ -164,7 +171,7 @@ export function AdminLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm"/>
+            <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm" />
             <Link to="/admin/home" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Group>
                 <Image src="/logo.png" alt="Orochi Logo" style={{ width: '30px' }} />

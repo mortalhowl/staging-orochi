@@ -22,6 +22,9 @@ interface PermissionState {
   };
 }
 
+const ADMIN_ONLY_MODULES = ['dashboard', 'settings'];
+const ACTION_ONLY_MODULES = ['check-in', 'invited-tickets'];
+
 export function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -33,8 +36,9 @@ export function UserDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
-    const { hasEditPermission } = useAuthStore();
+  const { hasEditPermission } = useAuthStore();
   const canEditUsers = hasEditPermission('users');
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,15 +211,15 @@ export function UserDetailPage() {
               )}
 
               {/* Phần hành động nguy hiểm giờ đây áp dụng cho tất cả các vai trò */}
-              {canEditUsers && (user.role === 'staff' || user.role === 'admin') && (
-              <Flex justify="flex-end" gap="md">
-                {user.status === 'active' ? (
-                  <Button onClick={() => handleAdminAction('disable_user')} color="orange">Vô hiệu hóa</Button>
-                ) : (
-                  <Button onClick={() => handleAdminAction('enable_user')} color="teal">Kích hoạt</Button>
-                )}
-                <Button onClick={() => handleAdminAction('delete_user')} color="red">Xóa tài khoản</Button>
-              </Flex>
+              {canEditUsers && (
+                <Flex justify="flex-end" gap="md">
+                  {user.status === 'active' ? (
+                    <Button onClick={() => handleAdminAction('disable_user')} color="orange">Vô hiệu hóa</Button>
+                  ) : (
+                    <Button onClick={() => handleAdminAction('enable_user')} color="teal">Kích hoạt</Button>
+                  )}
+                  <Button onClick={() => handleAdminAction('delete_user')} color="red">Xóa tài khoản</Button>
+                </Flex>
               )}
             </Stack>
           </Paper>
@@ -225,9 +229,9 @@ export function UserDetailPage() {
         </Tabs.Panel>
         {user.role === 'admin' ? (
           <Tabs.Panel value="permissions" pt="md">
-          <Badge color="blue" variant="light" size='xl' mb="md">
-            Full permissions for staff users
-          </Badge></Tabs.Panel>
+            <Badge color="blue" variant="light" size='xl' mb="md">
+              Full permissions for staff users
+            </Badge></Tabs.Panel>
         ) : user.role === 'staff' && canEditUsers ? (
           <Tabs.Panel value="permissions" pt="md">
             <Paper withBorder p="md" radius="md">
@@ -240,32 +244,24 @@ export function UserDetailPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {modules.map((module) => (
+                  {modules.filter(m => !ADMIN_ONLY_MODULES.includes(m.code)).map(module => (
                     <Table.Tr key={module.id}>
-                      <Table.Td>{module.name}</Table.Td>
+                      <Table.Td>
+                        {module.name}
+                        {ACTION_ONLY_MODULES.includes(module.code) && <Text size="xs" c="dimmed">Quyền xem đã bao gồm quyền thực hiện</Text>}
+                      </Table.Td>
                       <Table.Td>
                         <Checkbox
                           checked={permissions[module.id]?.canView || false}
-                          onChange={(e) =>
-                            handlePermissionChange(
-                              module.id,
-                              'canView',
-                              e.currentTarget.checked
-                            )
-                          }
+                          onChange={(e) => handlePermissionChange(module.id, 'canView', e.currentTarget.checked)}
                         />
                       </Table.Td>
                       <Table.Td>
                         <Checkbox
                           checked={permissions[module.id]?.canEdit || false}
-                          onChange={(e) =>
-                            handlePermissionChange(
-                              module.id,
-                              'canEdit',
-                              e.currentTarget.checked
-                            )
-                          }
-                          disabled={!permissions[module.id]?.canView}
+                          onChange={(e) => handlePermissionChange(module.id, 'canEdit', e.currentTarget.checked)}
+                          // Vô hiệu hóa nếu không có quyền xem HOẶC là module hành động
+                          disabled={!permissions[module.id]?.canView || ACTION_ONLY_MODULES.includes(module.code)}
                         />
                       </Table.Td>
                     </Table.Tr>

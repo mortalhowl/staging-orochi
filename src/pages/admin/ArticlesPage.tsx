@@ -101,7 +101,7 @@ export function ArticlesPage() {
   const handleCloseModal = () => { closeModal(); setArticleToEdit(null); };
 
   return (
-    <Container size="xl">
+    <Container size="xl" mt="md">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Bài viết</Title>
         {canEditArticles && (

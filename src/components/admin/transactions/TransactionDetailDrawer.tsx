@@ -19,6 +19,7 @@ interface TransactionDetailDrawerProps {
 interface TransactionDetails {
   id: string;
   total_amount: number;
+  discount_amount: number;
   status: string;
   users: { email: string; full_name: string | null };
   events: { title: string };
@@ -47,7 +48,13 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
       setLoading(true);
       setError(null);
       try {
-        const transactionPromise = supabase.from('transactions').select('*, users(email, full_name), events(title)').eq('id', transactionId).single();
+        // 1. NÂNG CẤP QUERY: Lấy thêm thông tin voucher (code)
+        const transactionPromise = supabase
+          .from('transactions')
+          .select('*, users(email, full_name), events(title), vouchers(code)')
+          .eq('id', transactionId)
+          .single();
+
         const itemsPromise = supabase.from('transaction_items').select('*, ticket_types(name)').eq('transaction_id', transactionId);
 
         const [transRes, itemsRes] = await Promise.all([transactionPromise, itemsPromise]);
@@ -68,7 +75,6 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
       fetchDetails();
     }
   }, [transactionId, opened]);
-
 
   // const handleConfirmPayment = () => {
   //   modals.openConfirmModal({
@@ -152,6 +158,8 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
     }
   };
 
+  const subTotal = transaction ? transaction.total_amount + transaction.discount_amount : 0;
+
   // 1. Hàm mới để xử lý gửi lại vé
   // const handleResendTicket = async () => {
   //   const notiId = notifications.show({
@@ -225,11 +233,35 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
                       ))}
                     </Table.Tbody>
                   </Table>
-                  <Divider mt="xs" />
+                  <Divider my="md" />
+
+                  {transaction.discount_amount > 0 ? (
+                    <Stack gap="xs" mt="xs">
+                      <Group justify="space-between">
+                        <Text>Tổng tiền hàng:</Text>
+                        <Text>{subTotal.toLocaleString('vi-VN')}đ</Text>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text c="green">Voucher giảm giá:</Text>
+                        <Text c="green">- {transaction.discount_amount.toLocaleString('vi-VN')}đ</Text>
+                      </Group>
+                      <Divider />
+                      <Group justify="space-between">
+                        <Text fw={700}>Thành tiền:</Text>
+                        <Text fw={700}>{transaction.total_amount.toLocaleString('vi-VN')}đ</Text>
+                      </Group>
+                    </Stack>
+                  ) : (
+                    <Group justify="space-between" mt="xs">
+                      <Text fw={700}>Tổng cộng:</Text>
+                      <Text fw={700}>{transaction.total_amount.toLocaleString('vi-VN')}đ</Text>
+                    </Group>
+                  )}
+                  {/* <Divider mt="xs" />
                   <Group justify="space-between" mt="xs">
                     <Text fw={700}>Tổng cộng:</Text>
                     <Text fw={700}>{transaction.total_amount.toLocaleString('vi-VN')}đ</Text>
-                  </Group>
+                  </Group> */}
                   {canEdit && (
                     <Stack justify='flex-end' mt="md" gap="xs">
                       {transaction.status === 'pending' && (

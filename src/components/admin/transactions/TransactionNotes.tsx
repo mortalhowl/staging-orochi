@@ -114,7 +114,10 @@ export function TransactionNotes({ transactionId }: TransactionNotesProps) {
           );
         })}
 
-        {notes.length === 0 && <Text c="dimmed" ta="center">Chưa có ghi chú nào.</Text>}
+        {notes.length === 0 && 
+        <Stack align="center" justify="center" h="calc(65vh)">
+          <Text c="dimmed" ta="center">Chưa có ghi chú nào.</Text>
+        </Stack>}
       </Stack>
       </ScrollArea>
 

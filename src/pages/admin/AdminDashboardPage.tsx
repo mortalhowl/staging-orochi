@@ -21,7 +21,7 @@ export function AdminDashboardPage() {
   };
 
   return (
-    <Container size="xl">
+    <Container size="xl" mt="md">
       <Group justify="space-between" mb="xl">
         <Title order={2}>Dashboard</Title>
         <DatePickerInput
