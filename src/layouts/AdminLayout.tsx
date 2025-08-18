@@ -13,6 +13,9 @@ import {
   Transition,
   Drawer,
   Image,
+  Title,
+  Center,
+  Loader,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import {
@@ -32,8 +35,8 @@ import {
   IconTag,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
-import { notifications } from '@mantine/notifications';
+// import { supabase } from '../services/supabaseClient';
+// import { notifications } from '@mantine/notifications';
 import type { Session } from '@supabase/supabase-js';
 import { useAuthStore } from '../store/authStore';
 
@@ -59,22 +62,34 @@ export function AdminLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
-  const { userProfile, permissions } = useAuthStore();
+  const { userProfile, permissions, isLoading, checkSession, logout } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      notifications.show({
-        title: 'Lỗi đăng xuất',
-        message: error.message,
-        color: 'red',
-      });
-    } else {
-      navigate('/admin/login');
+  useEffect(() => {
+    // Nếu có session nhưng profile trong store không khớp (hoặc chưa có),
+    // có nghĩa là người dùng vừa đăng nhập hoặc F5.
+    // Chúng ta cần yêu cầu store tải lại dữ liệu.
+    if (session?.user && (!userProfile || userProfile.id !== session.user.id)) {
+      checkSession();
     }
+  }, [session, userProfile, checkSession]);
+  const handleLogout = async () => {
+    await logout();
+    navigate('/admin/login');
   };
+  // const handleLogout = async () => {
+  //   const { error } = await supabase.auth.signOut();
+  //   if (error) {
+  //     notifications.show({
+  //       title: 'Lỗi đăng xuất',
+  //       message: error.message,
+  //       color: 'red',
+  //     });
+  //   } else {
+  //     navigate('/admin/login');
+  //   }
+  // };
 
   const toggleSidebar = () => {
     setIsTransitioning(true);
@@ -97,8 +112,16 @@ export function AdminLayout() {
   }, []);
 
   const hasPermission = (moduleCode: string) => {
-    if (userProfile?.role === 'admin') return true;
+    // Admin luôn có quyền
+    if (userProfile?.role === 'admin') {
+      return true;
+    }
+    // Staff không bao giờ có quyền vào Dashboard và Settings
     if (userProfile?.role === 'staff') {
+      if (moduleCode === 'dashboard' || moduleCode === 'settings') {
+        return false;
+      }
+      // Đối với các module khác, kiểm tra quyền xem
       return permissions.some(p => p.moduleCode === moduleCode && p.canView);
     }
     return false;
@@ -157,6 +180,21 @@ export function AdminLayout() {
       )}
     </>
   );
+
+  if (isLoading || !userProfile) {
+    return (
+      <AppShell header={{ height: 60 }} padding="md">
+        <AppShell.Header>
+          <Group h="100%" px="md" justify="space-between">
+            <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
+          </Group>
+        </AppShell.Header>
+        <AppShell.Main>
+          <Center h="calc(100vh - 60px)"><Loader /></Center>
+        </AppShell.Main>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell

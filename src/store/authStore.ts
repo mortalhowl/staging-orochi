@@ -1,5 +1,3 @@
-
-//src/store/authStore.ts
 import { create } from 'zustand';
 import { supabase } from '../services/supabaseClient';
 import type{ Session } from '@supabase/supabase-js';
@@ -12,10 +10,9 @@ interface AuthState {
   isLoading: boolean;
   checkSession: () => Promise<void>;
   logout: () => Promise<void>;
-  hasEditPermission: (moduleCode: string) => boolean;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   userProfile: null,
   permissions: [],
@@ -29,7 +26,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('No session found');
       }
 
-      // Lấy thông tin role từ bảng public.users
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -39,15 +35,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (profileError) throw profileError;
 
       let userPermissions: Permission[] = [];
-      // Nếu là staff, lấy thêm các quyền chi tiết
       if (userProfile?.role === 'staff') {
         const { data: permissionsData, error: permissionsError } = await supabase
           .from('permissions')
-          .select('*, modules(code)') // JOIN với bảng modules để lấy code
+          .select('*, modules(code)')
           .eq('user_id', session.user.id);
         
         if (permissionsError) throw permissionsError;
-        userPermissions = permissionsData.map((p: any) => ({
+        userPermissions = (permissionsData || []).map((p: any) => ({
           moduleCode: p.modules.code,
           canView: p.can_view,
           canEdit: p.can_edit,
@@ -56,23 +51,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ session, userProfile, permissions: userPermissions, isLoading: false });
     } catch (error) {
-      // Nếu có lỗi (ví dụ: chưa đăng nhập), reset state
       set({ session: null, userProfile: null, permissions: [], isLoading: false });
     }
   },
 
+  // SỬA LỖI Ở ĐÂY: Đảm bảo logout xóa sạch state ngay lập tức
   logout: async () => {
     await supabase.auth.signOut();
+    // Reset state về trạng thái ban đầu một cách tường minh
     set({ session: null, userProfile: null, permissions: [], isLoading: false });
   },
-
-  hasEditPermission: (moduleCode: string) => {
-    const { userProfile, permissions } = get();
-    if (userProfile?.role === 'admin') return true;
-    if (userProfile?.role === 'staff') {
-      return permissions.some(p => p.moduleCode === moduleCode && p.canEdit);
-    }
-    return false;
-  }
-
 }));
