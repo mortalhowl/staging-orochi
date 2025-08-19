@@ -34,11 +34,11 @@ export function VoucherFormModal({ opened, onClose, onSuccess, voucherToEdit }: 
       code: (val) => (val.trim().length > 0 ? null : 'Mã không được trống'),
       discount_value: (val) => (val > 0 ? null : 'Giá trị phải lớn hơn 0'),
       // SỬA LỖI VALIDATION: Luôn tạo đối tượng Date mới để so sánh an toàn
-      valid_until: (val, values) => 
+      valid_until: (val, values) =>
         (new Date(val) > new Date(values.valid_from) ? null : 'Ngày hết hạn phải sau ngày bắt đầu'),
     },
   });
-  
+
   useEffect(() => {
     if (opened) {
       if (isEditing && voucherToEdit) {
@@ -85,7 +85,19 @@ export function VoucherFormModal({ opened, onClose, onSuccess, voucherToEdit }: 
     <Modal opened={opened} onClose={onClose} title={isEditing ? 'Sửa Voucher' : 'Tạo Voucher mới'} size="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
-          <TextInput required label="Mã Voucher" {...form.getInputProps('code')} />
+          <TextInput
+            required
+            label="Mã Voucher"
+            {...form.getInputProps('code')}
+            onChange={(e) => {
+              const value = e.currentTarget.value
+                .toUpperCase()        // ép in hoa
+                .replace(/\s+/g, "") // loại bỏ tất cả khoảng trắng
+                .replace(/[^A-Z0-9-_!@#$%^&*]/g, "")
+              form.setFieldValue('code', value);
+            }}
+          />
+
           <Select
             label="Loại giảm giá"
             data={[{ value: 'fixed', label: 'Số tiền cố định' }, { value: 'percentage', label: 'Phần trăm' }]}

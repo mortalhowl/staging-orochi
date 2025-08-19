@@ -59,10 +59,9 @@ export function PublicLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Group>
-              <Image src="/logo.png" alt="Orochi Logo" style={{ width: '30px' }} />
+              <Image src="/logo.png" alt="Orochi Logo" style={{ width: '36px' }} />
               <Text
                 fw={900} // Đậm nhất
-                fz="xl" // Chữ to
                 style={{
                   fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
                   color: '#008a87',
@@ -103,7 +102,7 @@ export function PublicLayout() {
               </Menu.Dropdown>
             </Menu>
           ) : (
-            <Button onClick={handleGoogleLogin} variant="default" px="xs">
+            <Button onClick={handleGoogleLogin} c="#fff" bg="#008a87" >
               Đăng nhập
             </Button>
           )}

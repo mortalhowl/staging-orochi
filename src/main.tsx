@@ -15,7 +15,35 @@ import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals'; 
 const theme = createTheme({
   fontFamily: 'Open Sans, sans-serif',
+  colors: {
+    brand: [
+      '#e6f7f6',
+      '#ccefee',
+      '#99dfdd',
+      '#66cfcc',
+      '#33bebb',
+      '#00aeaa', // main
+      '#008a87', // darker
+      '#006666',
+      '#004444',
+      '#002222',
+    ],
+  },
+  primaryColor: 'brand',
+  components: {
+    TextInput: {
+      styles: (theme: { colors: { brand: any[]; }; }) => ({
+        input: {
+          '&:focus': {
+            borderColor: theme.colors.brand[6], // viền theo màu brand
+            boxShadow: `0 0 0 2px ${theme.colors.brand[2]}`, // glow nhẹ
+          },
+        },
+      }),
+    },
+  },
 });
+
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

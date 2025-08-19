@@ -15,7 +15,14 @@ export function ArticleGrid({ articles }: ArticleGridProps) {
 
   return (
     <Container size="lg" py="xl" mt="xl">
-      <Title order={3} ta="center" mb="xl">
+      <Title order={3} ta="center" mb="xl"
+        style={{
+          fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+          color: '#008a87',
+          fontSize: '1.5rem',
+          fontWeight: 700,
+        }}
+      >
         Bài viết liên quan
       </Title>
       <Grid>
@@ -26,12 +33,12 @@ export function ArticleGrid({ articles }: ArticleGridProps) {
                 <Image src={article.image_url} height="auto" alt={article.title} />
               </Card.Section>
               <Text fw="bold" mt="md" mb="xs" truncate="end"
-              style={{
-                              fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-              color: '#008a87',
-              fontSize: '1rem',
-              fontWeight: 700,
-              }}
+                style={{
+                  fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+                  color: '#008a87',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                }}
               >{article.title}</Text>
               <Text size="sm" c="dimmed" lineClamp={2}>
                 {article.content?.replace(/<[^>]+>/g, '')}

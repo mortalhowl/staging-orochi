@@ -23,6 +23,7 @@ interface TransactionDetails {
   status: string;
   users: { email: string; full_name: string | null };
   events: { title: string };
+  vouchers: { code: string } | null;
 }
 
 interface TransactionItem {
@@ -195,7 +196,7 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
 
 
   return (
-    <Drawer opened={opened} onClose={onClose} title={<Text fw={700}>Chi tiết Đơn hàng</Text>} position="right" size="md">
+    <Drawer opened={opened} onClose={onClose} title={<Text fw={700}>Chi tiết Giao dịch</Text>} position="right" size="md">
       <div style={{ position: 'relative', height: '100%' }}>
         <LoadingOverlay visible={loading} />
         {error && <Alert color="red">{error}</Alert>}
@@ -242,9 +243,9 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
                         <Text>{subTotal.toLocaleString('vi-VN')}đ</Text>
                       </Group>
                       <Group justify="space-between">
-                        <Text c="green">Voucher giảm giá:</Text>
-                        <Text c="green">- {transaction.discount_amount.toLocaleString('vi-VN')}đ</Text>
-                      </Group>
+                                            <Text c="green">Voucher giảm giá ({transaction.vouchers?.code || 'N/A'}):</Text>
+                                            <Text c="green">- {transaction.discount_amount.toLocaleString('vi-VN')}đ</Text>
+                                        </Group>
                       <Divider />
                       <Group justify="space-between">
                         <Text fw={700}>Thành tiền:</Text>

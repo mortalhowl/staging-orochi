@@ -36,7 +36,7 @@ function EventSlide({ event }: { event: Event }) {
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          <Title order={1} c="#008a87" mb="md"
+          <Title order={1} c="#008a87" 
             style={{
               fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
               fontSize: '2rem',
@@ -44,9 +44,7 @@ function EventSlide({ event }: { event: Event }) {
             }}>
             {event.title.toUpperCase()}
           </Title>
-          <Text lineClamp={5} mb="xl">
-            {event.description}
-          </Text>
+          <Text lineClamp={5} size="sl" my="0px" dangerouslySetInnerHTML={{ __html: event.description }} />
           <Button
             component={Link}
             to={`/events/${event.slug}`}
@@ -88,19 +86,20 @@ function ArticleRow({ article, reverse }: { article: Article; reverse: boolean }
           {article.title?.toUpperCase()}
         </Title>
       </Link>
-      <Text lineClamp={5}>
+      {/* <Text lineClamp={5}>
         {article.content?.replace(/<[^>]+>/g, '')}
-      </Text>
+      </Text> */}
+      <Text lineClamp={5} size="sl" my="0px" dangerouslySetInnerHTML={{ __html: article.content }} />
     </>
   );
 
   const image = (
     <Box
-      style={{
-        borderRadius: '1.3rem',
-        padding: '4px',
-        background: 'linear-gradient(45deg, #088e8b, #A0E9FF, #FFB5E8)',
-      }}
+      // style={{
+      //   borderRadius: '1.3rem',
+      //   padding: '4px',
+      //   background: 'linear-gradient(45deg, #088e8b, #A0E9FF, #FFB5E8)',
+      // }}
     >
       <Link to={`/articles/${article.slug}`}>
         <Image

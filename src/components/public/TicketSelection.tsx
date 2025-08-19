@@ -16,9 +16,9 @@ export function TicketSelection({ event }: TicketSelectionProps) {
   const navigate = useNavigate();
   // 3. Lấy state và actions từ "kho" toàn cục
   const { cart, totalAmount, totalTickets, setEvent, updateCart } = useCartStore();
-  
+
   // State `invalidInputs` vẫn giữ lại ở local vì nó chỉ thuộc về component này
-  const [invalidInputs, setInvalidInputs] = useState<{[key: string]: boolean}>({});
+  const [invalidInputs, setInvalidInputs] = useState<{ [key: string]: boolean }>({});
 
   // 4. Khởi tạo event cho store khi component được tải
   useEffect(() => {
@@ -54,7 +54,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
     } else {
       setInvalidInputs(prev => ({ ...prev, [ticketId]: false }));
     }
-    
+
     // 5. Gọi action `updateCart` của store thay vì `setCart` local
     updateCart(ticketId, newQuantity);
   };
@@ -71,7 +71,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
 
       if (quantity > maxAllowed) {
         updateCart(ticketId, maxAllowed); // Cập nhật lại giá trị trong store
-        
+
         notifications.show({
           title: 'Số lượng không hợp lệ',
           message: `Bạn chỉ được mua tối đa ${maxAllowed} vé cho loại ${ticket.name}`,
@@ -83,7 +83,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
   }, [cart, event.ticket_types, updateCart]);
 
   // 6. Xóa các `useMemo` cho totalAmount và totalTickets vì đã có sẵn trong store
-  
+
   return (
     <Paper withBorder p="lg" radius="md" pos="sticky" top={80}>
       <Group justify="space-between">
@@ -95,7 +95,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
       <Divider my="sm" />
       <Stack>
         {event.ticket_types.filter(t => t.status === 'public').map((ticket) => {
-const quantity = cart[ticket.id] || 0;
+          const quantity = cart[ticket.id] || 0;
           const remaining = ticket.quantity_total !== null ? ticket.quantity_total - ticket.quantity_sold : Infinity;
           const maxAllowed = Math.min(MAX_TICKETS_PER_TYPE, remaining);
           const isInvalid = invalidInputs[ticket.id];
@@ -109,17 +109,17 @@ const quantity = cart[ticket.id] || 0;
                 </Stack>
                 <Text fw={700}>{ticket.price.toLocaleString('vi-VN')}đ</Text>
               </Group>
-              
+
               <Group justify="flex-end" gap="xs" mt="xs">
-                <ActionIcon 
-                  size={36} 
-                  variant="default" 
+                <ActionIcon
+                  size={36}
+                  variant="default"
                   onClick={() => handleQuantityChange(ticket.id, quantity - 1)}
                   disabled={quantity === 0 || !isSaleOpen}
                 >
                   <IconMinus size={18} />
                 </ActionIcon>
-                
+
                 <NumberInput
                   value={quantity}
                   onChange={(val) => handleQuantityChange(ticket.id, val)}
@@ -127,19 +127,19 @@ const quantity = cart[ticket.id] || 0;
                   max={maxAllowed}
                   disabled={!isSaleOpen || maxAllowed === 0}
                   hideControls
-                  styles={{ 
-                    input: { 
-                      textAlign: 'center', 
+                  styles={{
+                    input: {
+                      textAlign: 'center',
                       width: '4rem',
                       borderColor: isInvalid ? 'red' : undefined,
                       //  backgroundColor: isInvalid ? '#fff0f0' : undefined
-                    } 
+                    }
                   }}
                 />
 
-                <ActionIcon 
-                  size={36} 
-                  variant="default" 
+                <ActionIcon
+                  size={36}
+                  variant="default"
                   onClick={() => handleQuantityChange(ticket.id, quantity + 1)}
                   disabled={quantity >= maxAllowed || !isSaleOpen || maxAllowed === 0}
                 >
@@ -162,10 +162,10 @@ const quantity = cart[ticket.id] || 0;
         <Text>Tổng cộng ({totalTickets} vé):</Text>
         <Text fw={700} size="xl">{totalAmount.toLocaleString('vi-VN')}đ</Text>
       </Group>
-      <Button 
-        fullWidth 
-        mt="md" 
-        size="md" 
+      <Button
+        fullWidth
+        mt="md"
+        size="md"
         bg="#008a87"
         disabled={totalTickets === 0 || !isSaleOpen}
         onClick={() => navigate('/checkout')} // 7. Thêm hành động điều hướng

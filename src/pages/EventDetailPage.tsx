@@ -56,15 +56,15 @@ export function EventDetailPage() {
         <Image src={event.cover_image_url} w="100%" h="auto" mb="xl" style={{ borderRadius: "5px" }} />
         <Grid>
           <Grid.Col span={{ base: 12, md: 8 }}>
-            <Stack>
+            <Stack gap="xs">
               <Title order={2} style={{
                 // background: 'linear-gradient(45deg, #088e8b, #33b8b4)',
                 // WebkitBackgroundClip: 'text',
                 // WebkitTextFillColor: 'transparent',
                 fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-              color: '#008a87',
-              fontSize: '1.5rem',
-              fontWeight: 700,
+                color: '#008a87',
+                fontSize: '1.5rem',
+                fontWeight: 700,
               }}>
                 {event.title}
               </Title>
@@ -76,7 +76,7 @@ export function EventDetailPage() {
                 )}
               </Stack> */}
 
-              <Stack mt="md" gap="xs">
+              <Stack mt="md">
                 <Group align="center" wrap="nowrap">
                   <ActionIcon variant="gradient" gradient={{ deg: 45, from: '#088e8b', to: '#33b8b4' }} size="lg">
                     <IconCalendar size={18} />
@@ -113,8 +113,8 @@ export function EventDetailPage() {
                   </Group>
                 )}
               </Stack>
-              <Divider my="md" />
-              <div dangerouslySetInnerHTML={{ __html: event.description }} />
+              <Divider/>
+              <Text size="sl" dangerouslySetInnerHTML={{ __html: event.description }} />
             </Stack>
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
