@@ -34,8 +34,8 @@ export function AdminDashboardPage() {
         />
       </Group>
 
-      <Tabs defaultValue="overview">
-        <Tabs.List>
+      <Tabs defaultValue="overview" variant="pills" radius="md">
+        <Tabs.List justify="center">
           <Tabs.Tab value="overview">Tổng quan</Tabs.Tab>
           <Tabs.Tab value="events">Sự kiện</Tabs.Tab>
           <Tabs.Tab value="transactions">Giao dịch</Tabs.Tab>

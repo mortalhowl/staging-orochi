@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Container, Title, Select, Paper, Stack, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box } from '@mantine/core';
+import { Container, Title, Select, Paper, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
@@ -17,10 +17,10 @@ interface ModalData {
 // Component con để hiển thị kết quả trong Modal
 function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckIn: (ticketId: string) => void, loading: boolean }) {
   const statusMap = {
-    VALID: { color: 'blue', title: 'Vé Hợp Lệ', icon: <IconScan/> },
-    SUCCESS: { color: 'green', title: 'Check-in Thành Công!', icon: <IconCircleCheck/> },
-    ALREADY_USED: { color: 'orange', title: 'Vé Đã Được Sử Dụng', icon: <IconAlertCircle/> },
-    INVALID: { color: 'red', title: 'Vé Không Hợp Lệ', icon: <IconX/> },
+    VALID: { color: 'blue', title: 'Vé Hợp Lệ', icon: <IconScan /> },
+    SUCCESS: { color: 'green', title: 'Thành Công!', icon: <IconCircleCheck /> },
+    ALREADY_USED: { color: 'orange', title: 'Vé Đã Được Sử Dụng', icon: <IconAlertCircle /> },
+    INVALID: { color: 'red', title: 'Vé Không Hợp Lệ', icon: <IconX /> },
   };
   const { color, title, icon } = statusMap[data.status];
 
@@ -29,29 +29,39 @@ function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckI
       <Group>
         <Alert variant="light" color={color} title={title} icon={icon} w="100%">
           <Stack>
-            {data.message && <Text>{data.message}</Text>}
-            {data.ticket && (
+            {/* Nếu là SUCCESS thì chỉ hiển thị message */}
+            {data.status === 'SUCCESS' ? (
+              <Text fw={500} c="green">Đã Check-in thành công!</Text>
+            ) : (
               <>
-                <Text><b>Mã vé:</b> {data.ticket.id}</Text>
-                <Text><b>Khách hàng:</b> {data.ticket.transactions?.users?.full_name || data.ticket.full_name}</Text>
-                <Text><b>Email:</b> {data.ticket.transactions?.users?.email || data.ticket.email}</Text>
-                <Text><b>Loại vé:</b> {data.ticket.ticket_types?.name}</Text>
-                {data.ticket.is_used && (
-                  <Text><b>Thời gian check-in:</b> {formatDateTime(data.ticket.used_at)} bởi {data.ticket.checked_in_by_user?.full_name}</Text>
+                {data.message && <Text>{data.message}</Text>}
+                {data.ticket && (
+                  <>
+                    <Text><b>Mã vé:</b> {data.ticket.id}</Text>
+                    <Text><b>Khách hàng:</b> {data.ticket.transactions?.users?.full_name || data.ticket.full_name}</Text>
+                    <Text><b>Email:</b> {data.ticket.transactions?.users?.email || data.ticket.email}</Text>
+                    <Text><b>Loại vé:</b> {data.ticket.ticket_types?.name}</Text>
+                    {data.ticket.is_used && (
+                      <Text><b>Thời gian check-in:</b> {formatDateTime(data.ticket.used_at)} bởi {data.ticket.checked_in_by_user?.full_name}</Text>
+                    )}
+                  </>
                 )}
               </>
             )}
           </Stack>
         </Alert>
       </Group>
+
+      {/* Chỉ hiển thị nút check-in khi status = VALID */}
       {data.status === 'VALID' && (
-        <Button color="green" size="lg" onClick={() => onCheckIn(data.ticket.id)} loading={loading}>
-          Check-in Ngay
+        <Button onClick={() => onCheckIn(data.ticket.id)} loading={loading}>
+          Check-in
         </Button>
       )}
     </Stack>
   );
 }
+
 
 
 export function CheckInPage() {
@@ -83,7 +93,7 @@ export function CheckInPage() {
 
     const startScanner = async () => {
       if (qrScanner.getState() === Html5QrcodeScannerState.SCANNING) return;
-      
+
       try {
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length) {
@@ -92,7 +102,7 @@ export function CheckInPage() {
           const config = { fps: 10, qrbox: { width: 250, height: 250 } };
           await qrScanner.start(cameraId, config, onScanSuccess, undefined);
         } else {
-            throw new Error("No cameras found on this device.");
+          throw new Error("No cameras found on this device.");
         }
       } catch (err) {
         console.error("Lỗi khởi động camera:", err);
@@ -117,10 +127,10 @@ export function CheckInPage() {
     } else {
       stopScanner();
     }
-    
+
     // Dọn dẹp khi component unmount
     return () => {
-        stopScanner();
+      stopScanner();
     };
   }, [isCameraOn, selectedEventId]);
 
@@ -174,8 +184,8 @@ export function CheckInPage() {
       <Modal opened={modalOpened} onClose={handleModalClose} title="Kết quả Quét vé" centered>
         {loading && <Center><Loader /></Center>}
         {!loading && modalData && (
-          <ResultDisplay 
-            data={modalData} 
+          <ResultDisplay
+            data={modalData}
             onCheckIn={(ticketId) => handleTicketLookup(ticketId, true)}
             loading={loading}
           />
@@ -183,58 +193,79 @@ export function CheckInPage() {
       </Modal>
 
       <Container size="xs">
-        <Title order={2} ta="center" mb="xl">Soát vé (Check-in)</Title>
-        <Paper withBorder p="md" radius="md">
-          {!selectedEventId ? (
-            <Select
-              label="Bước 1: Chọn sự kiện để bắt đầu"
-              placeholder="Chọn sự kiện..."
-              data={events}
-              onChange={(value) => {
-                setSelectedEventId(value);
-                setIsCameraOn(true); // Tự động bật camera khi chọn sự kiện
-              }}
-              searchable
-            />
-          ) : (
-            <Stack>
-              <Title order={4} ta="center">Đang check-in cho sự kiện: {events.find(e => e.value === selectedEventId)?.label}</Title>
-              
-              <Paper withBorder p="sm" radius="md">
-                <Group justify="space-between">
-                    <Text fw={500}>Camera</Text>
-                    <Switch
-                        checked={isCameraOn}
-                        onChange={(event) => setIsCameraOn(event.currentTarget.checked)}
-                        label={isCameraOn ? "Đang bật" : "Đang tắt"}
-                        thumbIcon={isCameraOn ? <IconCamera size={12} /> : <IconCameraOff size={12} />}
-                    />
-                </Group>
-              </Paper>
+        <Title order={2} ta="center" mb="xl">Check-in</Title>
+        {!selectedEventId ? (
+          <Select
+            label="Chọn sự kiện để bắt đầu"
+            placeholder="Chọn sự kiện..."
+            data={events}
+            onChange={(value) => {
+              setSelectedEventId(value);
+              setIsCameraOn(true); // Tự động bật camera khi chọn sự kiện
+            }}
+            searchable
+          />
+        ) : (
+          <Stack>
+            <Group justify="center" align="center" gap="xs">
+              <Text>Sự kiện:</Text>
+              <Text c="#008a87" fw={700}>{events.find(e => e.value === selectedEventId)?.label}</Text>
+            </Group>
 
-              <Box
-                id="qr-scanner-container"
-                style={{ display: isCameraOn ? 'block' : 'none', width: '100%' }}
-              />
-              {!isCameraOn && (
-                <Center h={250} bg="gray.1" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-                  <Text c="dimmed">Camera đang tắt</Text>
-                </Center>
+            <Paper withBorder p="sm" radius="md">
+              <Group justify="space-between">
+                <Text fw={500}>Camera</Text>
+                <Switch
+                  checked={isCameraOn}
+                  onChange={(event) => setIsCameraOn(event.currentTarget.checked)}
+                  // label={isCameraOn ? "Đang bật" : "Đang tắt"}
+                  thumbIcon={isCameraOn ? <IconCamera size={12} /> : <IconCameraOff size={12} />}
+                />
+              </Group>
+            </Paper>
+
+            <Box
+              style={{
+                border: '1px solid #ddd',
+                width: '100%',
+                aspectRatio: '4 / 3', // hoặc '16 / 9'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isCameraOn ? (
+                <Box
+                  id="qr-scanner-container"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              ) : (
+                <Text c="dimmed">Camera đang tắt</Text>
               )}
-              
-              <TextInput
-                label="Hoặc nhập mã vé thủ công"
-                placeholder="Nhập mã vé..."
-                value={ticketIdInput}
-                onChange={(e) => setTicketIdInput(e.currentTarget.value)}
-                onKeyDown={(event) => { if (event.key === 'Enter') handleTicketLookup(ticketIdInput); }}
-              />
-              <Button onClick={() => handleTicketLookup(ticketIdInput)} disabled={!ticketIdInput}>
-                Kiểm tra vé
-              </Button>
-            </Stack>
-          )}
-        </Paper>
+            </Box>
+            <Divider my="md" label="Hoặc" />
+            <TextInput
+              placeholder="Nhập mã vé..."
+              value={ticketIdInput}
+              onChange={(e) => setTicketIdInput(e.currentTarget.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') handleTicketLookup(ticketIdInput); }}
+              rightSection={
+                ticketIdInput ? (
+                  <ActionIcon
+                    onClick={() => setTicketIdInput('')}
+                    variant="subtle"
+                    color="gray"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                ) : null
+              }
+            />
+            <Button onClick={() => handleTicketLookup(ticketIdInput)} disabled={!ticketIdInput}>
+              Kiểm tra
+            </Button>
+          </Stack>
+        )}
       </Container>
     </>
   );
