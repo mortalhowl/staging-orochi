@@ -10,9 +10,11 @@ interface AuthState {
   isLoading: boolean;
   checkSession: () => Promise<void>;
   logout: () => Promise<void>;
+  // Bổ sung hàm còn thiếu
+  hasEditPermission: (moduleCode: string) => boolean;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   userProfile: null,
   permissions: [],
@@ -55,10 +57,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  // SỬA LỖI Ở ĐÂY: Đảm bảo logout xóa sạch state ngay lập tức
   logout: async () => {
     await supabase.auth.signOut();
-    // Reset state về trạng thái ban đầu một cách tường minh
     set({ session: null, userProfile: null, permissions: [], isLoading: false });
   },
+
+  // BỔ SUNG HÀM CÒN THIẾU VÀO ĐÂY
+  hasEditPermission: (moduleCode: string) => {
+    const { userProfile, permissions } = get();
+    // Admin luôn có quyền sửa
+    if (userProfile?.role === 'admin') {
+      return true;
+    }
+    // Staff cần có quyền canEdit
+    if (userProfile?.role === 'staff') {
+      return permissions.some(p => p.moduleCode === moduleCode && p.canEdit);
+    }
+    // Các trường hợp khác không có quyền
+    return false;
+  }
 }));
