@@ -14,6 +14,7 @@ interface ModalData {
   message: string | null;
 }
 
+// Component con để hiển thị kết quả trong Modal
 function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckIn: (ticketId: string) => void, loading: boolean }) {
   const statusMap = {
     VALID: { color: 'blue', title: 'Vé Hợp Lệ', icon: <IconScan/> },
@@ -62,7 +63,6 @@ export function CheckInPage() {
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const isTransitioningRef = useRef(false); // Ngăn chuyển đổi trạng thái đồng thời
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -72,24 +72,10 @@ export function CheckInPage() {
     fetchEvents();
   }, []);
 
-  // Effect dọn dẹp khi component unmount
-  useEffect(() => {
-    return () => {
-      const scanner = scannerRef.current;
-      if (scanner) {
-        const state = scanner.getState();
-        if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
-          scanner.stop().catch(() => {});
-        }
-      }
-    };
-  }, []);
-
-  // Effect quản lý camera (đã sửa lỗi)
+  // Effect quản lý camera
   useEffect(() => {
     if (!selectedEventId) return;
 
-    // Khởi tạo scanner nếu chưa có
     if (!scannerRef.current) {
       scannerRef.current = new Html5Qrcode('qr-scanner-container');
     }
@@ -98,12 +84,19 @@ export function CheckInPage() {
     const startScanner = async () => {
       if (qrScanner.getState() === Html5QrcodeScannerState.SCANNING) return;
       
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
       try {
-        await qrScanner.start({ facingMode: "environment" }, config, onScanSuccess, undefined);
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length) {
+          // Ưu tiên camera sau, nếu không có thì dùng camera đầu tiên
+          const cameraId = cameras.find(c => c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
+          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+          await qrScanner.start(cameraId, config, onScanSuccess, undefined);
+        } else {
+            throw new Error("No cameras found on this device.");
+        }
       } catch (err) {
         console.error("Lỗi khởi động camera:", err);
-        // Tự động tắt camera nếu khởi động thất bại
+        notifications.show({ title: 'Lỗi Camera', message: 'Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.', color: 'red' });
         setIsCameraOn(false);
       }
     };
@@ -119,27 +112,16 @@ export function CheckInPage() {
       }
     };
 
-    const handleCamera = async () => {
-      // Bỏ qua nếu đang trong quá trình chuyển đổi
-      if (isTransitioningRef.current) return;
-      
-      isTransitioningRef.current = true;
-      
-      try {
-        if (isCameraOn) {
-          await startScanner();
-        } else {
-          await stopScanner();
-        }
-      } catch (error) {
-        console.error('Lỗi khi chuyển đổi camera:', error);
-      } finally {
-        isTransitioningRef.current = false;
-      }
+    if (isCameraOn) {
+      startScanner();
+    } else {
+      stopScanner();
+    }
+    
+    // Dọn dẹp khi component unmount
+    return () => {
+        stopScanner();
     };
-
-    handleCamera();
-
   }, [isCameraOn, selectedEventId]);
 
   const onScanSuccess = (decodedText: string) => {
@@ -186,7 +168,6 @@ export function CheckInPage() {
       setLoading(false);
     }
   };
-
 
   return (
     <>
