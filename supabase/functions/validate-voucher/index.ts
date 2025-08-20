@@ -49,16 +49,23 @@ Deno.serve(async (req) => {
     }
     console.log('[LOG] Check 2/5: usage_limit -> PASSED');
 
-    const now = new Date();
-    if (now < new Date(voucher.valid_from) || now > new Date(voucher.valid_until)) {
+    // 🔹 CHUYỂN min_order_amount lên trước
+    if (orderAmount < voucher.min_order_amount) {
+      throw new Error(
+        `Đơn hàng phải có giá trị tối thiểu ${voucher.min_order_amount.toLocaleString('vi-VN')}đ.`
+      );
+    }
+    console.log('[LOG] Check 3/5: min_order_amount -> PASSED');
+
+    // 🔹 Sau đó mới check thời gian hiệu lực
+    const now = new Date().getTime();
+    const validFrom = new Date(voucher.valid_from).getTime();
+    const validUntil = new Date(voucher.valid_until).getTime();
+
+    if (now < validFrom || now > validUntil) {
       throw new Error('Voucher đã hết hạn hoặc chưa đến ngày sử dụng.');
     }
-    console.log('[LOG] Check 3/5: date_validity -> PASSED');
-
-    if (orderAmount < voucher.min_order_amount) {
-      throw new Error(`Đơn hàng phải có giá trị tối thiểu ${voucher.min_order_amount.toLocaleString('vi-VN')}đ.`);
-    }
-    console.log('[LOG] Check 4/5: min_order_amount -> PASSED');
+    console.log('[LOG] Check 4/5: date_validity -> PASSED');
 
     if (voucher.event_id && voucher.event_id !== eventId) {
       throw new Error('Voucher này không áp dụng cho sự kiện hiện tại.');
@@ -76,7 +83,7 @@ Deno.serve(async (req) => {
         discountAmount = voucher.max_discount_amount;
       }
     }
-    
+
     discountAmount = Math.min(discountAmount, orderAmount);
     const finalAmount = orderAmount - discountAmount;
     console.log('[LOG] Calculation complete:', { discountAmount, finalAmount });

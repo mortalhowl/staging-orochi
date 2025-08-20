@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import { IconX } from '@tabler/icons-react';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '../types';
+import { getSupabaseFnError } from '../utils/supabaseFnError';
+// import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 
 export function CheckoutPage() {
   // Lấy state và actions từ "kho" giỏ hàng
@@ -49,31 +51,29 @@ export function CheckoutPage() {
     checkSessionAndProfile();
   }, []);
 
-  const handleApplyVoucher = async () => {
-    if (!voucherCode.trim()) return;
-    setVoucherLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-voucher', {
-        body: {
-          voucherCode,
-          orderAmount: totalAmount,
-          eventId: event!.id,
-        },
-      });
-      if (error) {
-        const errorBody = JSON.parse(error.context.body);
-        throw new Error(errorBody.error);
-      }
+const handleApplyVoucher = async () => {
+  if (!voucherCode.trim()) return;
+  setVoucherLoading(true);
 
-      applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
-      notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
-    } catch (err: any) {
-      notifications.show({ title: 'Thất bại', message: 'Voucher đã hết hạn hoặc không tồn tại', color: 'red' });
-    } finally {
-      setVoucherLoading(false);
-    }
-  };
+  const { data, error } = await supabase.functions.invoke('validate-voucher', {
+    body: {
+      voucherCode,
+      orderAmount: totalAmount,
+      eventId: event!.id,
+    },
+  });
 
+  if (error) {
+    const msg = await getSupabaseFnError(error);
+    notifications.show({ title: 'Áp dụng thất bại', message: msg, color: 'red' });
+    setVoucherLoading(false);
+    return;
+  }
+
+  applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
+  notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
+  setVoucherLoading(false);
+};
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^0\d{9}$/;
     if (!phoneNumber) {

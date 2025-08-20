@@ -48,12 +48,25 @@ Deno.serve(async (req) => {
     }
     
     // Nếu chỉ là kiểm tra (chưa nhấn nút check-in)
-    if (!performCheckIn) {
-      const status = ticket.is_used ? 'ALREADY_USED' : 'VALID';
-      return new Response(JSON.stringify({ status, ticket }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+if (!performCheckIn) {
+  let status: string;
+  let message: string | null = null;
+
+  if (ticket.is_used) {
+    status = 'ALREADY_USED';
+    message = 'Vé đã được sử dụng.';
+  } else if (ticket.status === 'disabled') {
+    status = 'TICKET_DISABLED';
+    message = 'Vé này đã bị vô hiệu hóa.';
+  } else {
+    status = 'VALID';
+    message = 'Vé hợp lệ, bạn có thể check-in.';
+  }
+
+  return new Response(JSON.stringify({ status, ticket, message }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
 
     // Nếu thực hiện check-in
     const { data: updatedTicket, error: updateError } = await supabaseAdmin

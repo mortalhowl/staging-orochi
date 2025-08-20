@@ -163,15 +163,21 @@ export function CheckInPage() {
         body: { ticketId, eventId: selectedEventId, performCheckIn },
       });
 
-      if (error) {
-        const errorBody = JSON.parse(error.context.body);
-        setModalData({ status: 'INVALID', ticket: null, message: errorBody.error });
-      } else {
-        setModalData({ status: data.status, ticket: data.ticket, message: null });
-        if (data.status === 'SUCCESS') {
-          setTimeout(() => handleModalClose(), 2000);
-        }
-      }
+if (error) {
+  const errorBody = JSON.parse(error.context.body);
+  setModalData({ status: 'INVALID', ticket: null, message: errorBody.error });
+} else {
+  setModalData({
+    status: data.status,
+    ticket: data.ticket,
+    message: data.message || null,  // ✅ lấy message từ API
+  });
+
+  if (data.status === 'SUCCESS') {
+    setTimeout(() => handleModalClose(), 2000);
+  }
+}
+
     } catch (err: any) {
       setModalData({ status: 'INVALID', ticket: null, message: err.message });
     } finally {
@@ -206,7 +212,7 @@ export function CheckInPage() {
             searchable
           />
         ) : (
-          <Stack gap={5}>
+          <Stack>
             <Group justify="center" align="center" gap="xs">
               <Text>Sự kiện:</Text>
               <Text c="#008a87" fw={700}>{events.find(e => e.value === selectedEventId)?.label}</Text>
