@@ -193,7 +193,7 @@ export function CheckInPage() {
       </Modal>
 
       <Container size="xs">
-        <Title order={2} ta="center" mb="xl">Check-in</Title>
+        {/* <Title order={2} ta="center" mb="xl">Check-in</Title> */}
         {!selectedEventId ? (
           <Select
             label="Chọn sự kiện để bắt đầu"
@@ -206,13 +206,13 @@ export function CheckInPage() {
             searchable
           />
         ) : (
-          <Stack>
+          <Stack gap={5}>
             <Group justify="center" align="center" gap="xs">
               <Text>Sự kiện:</Text>
               <Text c="#008a87" fw={700}>{events.find(e => e.value === selectedEventId)?.label}</Text>
             </Group>
 
-            <Paper withBorder p="sm" radius="md">
+            <Paper withBorder p="xs" radius="md">
               <Group justify="space-between">
                 <Text fw={500}>Camera</Text>
                 <Switch
