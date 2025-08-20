@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Container, Title, Paper, Loader, Center, Text, Accordion, Stack, SimpleGrid, Image, Tabs, Badge, Group, Tooltip, ActionIcon } from '@mantine/core';
+import { Container, Title, Paper, Loader, Center, Text, Accordion, Stack, SimpleGrid, Image, Tabs, Badge, Group, Flex } from '@mantine/core';
 import { supabase } from '../services/supabaseClient';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import qrcode from 'qrcode';
 import { formatDateTime } from '../utils/formatters';
 import { notifications } from '@mantine/notifications';
-import { IconTicket, IconHistory, IconCopy } from '@tabler/icons-react';
-import { useClipboard } from '@mantine/hooks';
+import { IconTicket, IconHistory } from '@tabler/icons-react';
+// import { useClipboard } from '@mantine/hooks';
 
 // --- TYPE DEFINITIONS ---
 interface AuthContextType { session: Session; }
@@ -149,7 +149,12 @@ function MyTicketsTab({ session }: { session: Session }) {
       ))}
     </Accordion>
   ) : (
-    <Text ta="center">Bạn chưa có vé nào.</Text>
+    <Container h="calc(80vh)">
+      <Center h="100%">
+        <Text ta="center">Bạn chưa có vé nào.</Text>
+      </Center>
+    </Container>
+
   );
 
 }
@@ -159,7 +164,7 @@ function TransactionHistoryTab({ session }: { session: Session }) {
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const clipboard = useClipboard();
+  // const clipboard = useClipboard();
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -192,7 +197,7 @@ function TransactionHistoryTab({ session }: { session: Session }) {
     );
 
   const statusMapping: { [key: string]: { label: string; color: string } } = {
-    pending: { label: "Chờ thanh toán", color: "yellow" },
+    pending: { label: "Chờ xác nhận", color: "yellow" },
     paid: { label: "Thành công", color: "green" },
     failed: { label: "Thất bại", color: "red" },
   };
@@ -203,9 +208,8 @@ function TransactionHistoryTab({ session }: { session: Session }) {
         <Paper
           key={trans.id}
           withBorder
-          p="md"
+          p="xs"
           radius="xs"
-          shadow="sm"
           onClick={() => {
             if (trans.status === "pending") navigate(`/payment/${trans.id}`);
           }}
@@ -222,10 +226,21 @@ function TransactionHistoryTab({ session }: { session: Session }) {
           </Group>
 
           {/* Nội dung chi tiết */}
-          <Group justify='space-between'>
-            <Group gap="xs" wrap="nowrap">
+          <Flex
+            direction={{ base: "column", sm: "row" }} // mobile = column, desktop = row
+            justify="space-between"
+            align="flex-start"
+            wrap="wrap"
+          >
+            <Text size="sm" c="dimmed" truncate>
+              Mã GD:{" "}
+              <Text span fw={500} c="#008a87">
+                {trans.id}
+              </Text>
+            </Text>
+            {/* <Group gap="xs" wrap="nowrap">
               <Tooltip label={trans.id}>
-                <Text size="sm" c="dimmed" truncate maw={200}>
+                <Text size="sm" c="dimmed" truncate>
                   Mã GD:{" "}
                   <Text span fw={500} c="#008a87">
                     {trans.id}
@@ -237,7 +252,7 @@ function TransactionHistoryTab({ session }: { session: Session }) {
                   <IconCopy size={14} />
                 </ActionIcon>
               </Tooltip>
-            </Group>
+            </Group> */}
 
             <Text size="sm" c="dimmed">
               Ngày tạo:{" "}
@@ -254,12 +269,16 @@ function TransactionHistoryTab({ session }: { session: Session }) {
                   : "Miễn phí"}
               </Text>
             </Text>
-          </Group>
+          </Flex>
         </Paper>
       ))}
     </Stack>
   ) : (
-    <Text ta="center">Bạn chưa có giao dịch nào.</Text>
+    <Container h="calc(80vh)">
+      <Center h="100%">
+        <Text ta="center">Bạn chưa có giao dịch nào.</Text>
+      </Center>
+    </Container>
   );
 }
 

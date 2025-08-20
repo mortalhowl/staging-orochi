@@ -85,10 +85,10 @@ export function TicketSelection({ event }: TicketSelectionProps) {
   // 6. Xóa các `useMemo` cho totalAmount và totalTickets vì đã có sẵn trong store
 
   return (
-    <Paper withBorder p="lg" radius="md" pos="sticky" top={80}>
+    <Paper withBorder p="md" radius="md" pos="sticky" top={80}>
       <Group justify="space-between">
-        <Title order={3}>Mua vé</Title>
-        <Badge size="lg" color={isSaleOpen ? '#008a87' : 'red'}>
+        <Title order={5}>Mua vé</Title>
+        <Badge size="md" color={isSaleOpen ? '#008a87' : 'red'}>
           {isSaleOpen ? 'Đang mở bán' : 'Đã đóng'}
         </Badge>
       </Group>
@@ -102,15 +102,17 @@ export function TicketSelection({ event }: TicketSelectionProps) {
 
           return (
             <div key={ticket.id}>
-              <Group justify="space-between">
+              <Group justify="space-between" wrap='nowrap'>
                 <Stack gap={0}>
                   <Text fw={500}>{ticket.name}</Text>
-                  <Text size="xs" c="dimmed">{ticket.description}</Text>
+                  {/* <Text size="xs" c="dimmed">{ticket.description}</Text> */}
                 </Stack>
                 <Text fw={700}>{ticket.price.toLocaleString('vi-VN')}đ</Text>
               </Group>
 
-              <Group justify="flex-end" gap="xs" mt="xs">
+              <Group justify="space-between" wrap='nowrap' mt="xs">
+                <Text size="xs" c="dimmed">{ticket.description}</Text>
+                <Group wrap='nowrap' gap={5}>
                 <ActionIcon
                   size={36}
                   variant="default"
@@ -130,7 +132,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
                   styles={{
                     input: {
                       textAlign: 'center',
-                      width: '4rem',
+                      width: '3rem',
                       borderColor: isInvalid ? 'red' : undefined,
                       //  backgroundColor: isInvalid ? '#fff0f0' : undefined
                     }
@@ -145,6 +147,7 @@ export function TicketSelection({ event }: TicketSelectionProps) {
                 >
                   <IconPlus size={18} />
                 </ActionIcon>
+                </Group>
               </Group>
               <Text size="xs" c="dimmed" ta="right">
                 {remaining !== Infinity ? `Còn lại: ${remaining} vé` : ''}

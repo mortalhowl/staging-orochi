@@ -1,9 +1,9 @@
-import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image } from '@mantine/core';
+import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image, useMantineColorScheme, } from '@mantine/core';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
-import { IconLogout, IconTicket } from '@tabler/icons-react';
+import { IconLogout, IconTicket, IconSun, IconMoon } from '@tabler/icons-react';
 import type { UserProfile } from '../types';
 import { Footer } from '../components/public/Footer';
 
@@ -11,6 +11,7 @@ export function PublicLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   useEffect(() => {
     const fetchProfile = async (user: User | null) => {
@@ -59,7 +60,7 @@ export function PublicLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Group>
-              <Image src="/logo.png" alt="Orochi Logo" style={{ width: '36px' }} />
+              <Image src="/logo.png" alt="Orochi Logo" style={{ width: '34px' }} />
               <Text
                 fw={900} // Đậm nhất
                 style={{
@@ -91,6 +92,14 @@ export function PublicLayout() {
                 >
                   Vé của tôi
                 </Menu.Item>
+                              <Menu.Item
+                leftSection={
+                  colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
+                }
+                onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
+              >
+                Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
+              </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   color="red"

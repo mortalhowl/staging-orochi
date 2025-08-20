@@ -76,7 +76,7 @@ export function EventDetailPage() {
                 )}
               </Stack> */}
 
-              <Stack mt="md">
+              <Stack mt="md" gap='xs'>
                 <Group align="center" wrap="nowrap">
                   <ActionIcon variant="gradient" gradient={{ deg: 45, from: '#088e8b', to: '#33b8b4' }} size="lg">
                     <IconCalendar size={18} />
@@ -114,7 +114,7 @@ export function EventDetailPage() {
                 )}
               </Stack>
               <Divider/>
-              <Text size="sl" dangerouslySetInnerHTML={{ __html: event.description }} />
+              <Text size='md' dangerouslySetInnerHTML={{ __html: event.description }} />
             </Stack>
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>

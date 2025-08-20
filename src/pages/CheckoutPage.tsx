@@ -1,4 +1,4 @@
-import { Container, Title, Paper, Stack, Text, Divider, Button, Group, Avatar, TextInput, ActionIcon } from '@mantine/core';
+import { Container, Title, Paper, Stack, Text, Divider, Button, Group, TextInput, ActionIcon } from '@mantine/core';
 import { useCartStore } from '../store/cartStore';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -68,7 +68,7 @@ export function CheckoutPage() {
       applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
       notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
     } catch (err: any) {
-      notifications.show({ title: 'Áp dụng thất bại', message: err.message, color: 'red' });
+      notifications.show({ title: 'Thất bại', message: 'Voucher đã hết hạn hoặc không tồn tại', color: 'red' });
     } finally {
       setVoucherLoading(false);
     }
@@ -137,21 +137,21 @@ export function CheckoutPage() {
       const { error: itemsError } = await supabase.from('transaction_items').insert(transactionItems);
       if (itemsError) throw itemsError;
 
-if (appliedVoucher) {
+      if (appliedVoucher) {
         const { error: voucherError } = await supabase.rpc('increment_voucher_usage', {
-            p_voucher_id: appliedVoucher.voucher.id
+          p_voucher_id: appliedVoucher.voucher.id
         });
-        
+
         // Log lỗi nếu có, nhưng không làm dừng luồng chính
         if (voucherError) {
-            console.error("Failed to increment voucher usage, but transaction was created:", voucherError);
-            // (Tùy chọn) Gửi thông báo cho admin biết
-            notifications.show({
-                title: 'Cảnh báo',
-                message: `Tạo giao dịch thành công nhưng không thể cập nhật voucher ${appliedVoucher.voucher.code}. Vui lòng kiểm tra lại.`,
-                color: 'orange',
-                autoClose: 10000,
-            });
+          console.error("Failed to increment voucher usage, but transaction was created:", voucherError);
+          // (Tùy chọn) Gửi thông báo cho admin biết
+          notifications.show({
+            title: 'Cảnh báo',
+            message: `Tạo giao dịch thành công nhưng không thể cập nhật voucher ${appliedVoucher.voucher.code}. Vui lòng kiểm tra lại.`,
+            color: 'orange',
+            autoClose: 10000,
+          });
         }
       }
 
@@ -212,7 +212,7 @@ if (appliedVoucher) {
               <Group justify="space-between">
                 <Group gap="xs">
                   {/* <IconTicket size={16} color="green" /> */}
-                  <Text c="green">Voucher ({appliedVoucher.voucher.code})</Text>
+                  <Text c="#008a86">Voucher ({appliedVoucher.voucher.code})</Text>
                   <ActionIcon
                     variant="transparent"
                     color="red"
@@ -222,7 +222,7 @@ if (appliedVoucher) {
                     <IconX />
                   </ActionIcon>
                 </Group>
-                <Text c="green">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')}đ</Text>
+                <Text c="#008a86">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')}đ</Text>
               </Group>
             )}
 
@@ -230,6 +230,7 @@ if (appliedVoucher) {
             <Group align="flex-end">
               <TextInput
                 placeholder="Nhập mã giảm giá"
+                variant='filled'
                 value={voucherCode}
                 onChange={(e) => setVoucherCode(e.currentTarget.value.toUpperCase())}
                 style={{ flex: 1 }}
@@ -246,7 +247,7 @@ if (appliedVoucher) {
                 }
               />
 
-              <Button onClick={handleApplyVoucher} c="#fff" bg={'#008a87'} loading={voucherLoading}>Áp dụng</Button>
+              <Button onClick={ () => {handleApplyVoucher(); setVoucherCode('');}} c="#fff" bg={'#008a87'} loading={voucherLoading}>Áp dụng</Button>
             </Group>
 
             <Divider />
@@ -263,34 +264,43 @@ if (appliedVoucher) {
         {/* Thông tin khách hàng */}
         <Paper withBorder p="lg" radius="md" shadow="sm">
           <Stack>
-            <Title order={4}>Thông tin khách hàng</Title>
+            <Title order={4} c='#008a87'>Thông tin khách hàng</Title>
             {sessionChecked && user ? (
               <>
-                <Group>
-                  <Avatar
-                    src={user.user_metadata.avatar_url}
-                    alt={userProfile?.full_name || ''}
-                    radius="xl"
-                  />
-                  <div>
-                    <Text size="sm" fw={500}>
+                <Stack>
+                  <Group justify='space-between'>
+                    <Text fw={'bold'}>Tên khách hàng:</Text>
+                    <Text pr="10px">
                       {userProfile?.full_name || user.user_metadata.full_name}
                     </Text>
-                    <Text size="xs" c="dimmed">{user.email}</Text>
-                  </div>
-                </Group>
+                  </Group>
+                  <Group justify='space-between'>
+                    <Text fw={'bold'}>Email:</Text>
+                    <Text pr="10px">{user.email}</Text>
+                  </Group>
+                  <Group justify='space-between' align='center'>
+                    <Text fw={'bold'}>Số điện thoại:</Text>
+                    <TextInput
+                      required
+                      variant='unstyled'
+                      placeholder="Nhập số điện thoại"
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.currentTarget.value);
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      error={phoneError}
+                      styles={{
+                        input: {
+                          textAlign: "right",
+                          paddingRight:"10px"
+                        },
+                      }}
+                    />
+                  </Group>
+                </Stack>
 
-                <TextInput
-                  required
-                  label="Số điện thoại"
-                  placeholder="0123456789"
-                  value={phone}
-                  onChange={(event) => {
-                    setPhone(event.currentTarget.value);
-                    if (phoneError) setPhoneError(null);
-                  }}
-                  error={phoneError}
-                />
+
               </>
             ) : (
               <Text size="sm">Bạn cần đăng nhập để hoàn tất đơn hàng.</Text>
@@ -302,7 +312,7 @@ if (appliedVoucher) {
               onClick={handleCheckout}
               loading={loading}
             >
-              {user ? 'Xác nhận và Lấy mã thanh toán' : 'Đăng nhập để tiếp tục'}
+              {user ? 'Lấy mã thanh toán' : 'Đăng nhập để tiếp tục'}
             </Button>
           </Stack>
         </Paper>
