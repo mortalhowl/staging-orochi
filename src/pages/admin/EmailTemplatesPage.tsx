@@ -31,8 +31,8 @@ export function EmailTemplatesPage() {
       <Title order={2} mb="xl">Quản lý Mẫu Email</Title>
       <Grid>
         <Grid.Col span={{ base: 12, md: 8 }}>
-          <Tabs defaultValue="purchase_confirmation">
-            <Tabs.List>
+          <Tabs defaultValue="purchase_confirmation" variant='pills' radius={'md'}>
+            <Tabs.List justify='center'>
               <Tabs.Tab value="purchase_confirmation">Email Gửi vé bán</Tabs.Tab>
               <Tabs.Tab value="invitation_ticket">Email Gửi vé mời</Tabs.Tab>
               <Tabs.Tab value="resend_ticket">Email Gửi lại vé</Tabs.Tab>

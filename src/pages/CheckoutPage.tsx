@@ -1,4 +1,4 @@
-import { Container, Title, Paper, Stack, Text, Divider, Button, Group, TextInput, ActionIcon } from '@mantine/core';
+import { Container, Title, Paper, Stack, Text, Divider, Button, Group, TextInput, ActionIcon, ThemeIcon, Badge, Card } from '@mantine/core';
 import { useCartStore } from '../store/cartStore';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -8,7 +8,25 @@ import { IconX } from '@tabler/icons-react';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '../types';
 import { getSupabaseFnError } from '../utils/supabaseFnError';
-// import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
+import type { Voucher } from '../types'
+import { IconTicket, } from '@tabler/icons-react'
+
+const formatVoucherDescription = (voucher: Voucher) => {
+  let description = 'Giảm ';
+  if (voucher.discount_type === 'percentage') {
+    description += `${voucher.discount_value}%`;
+    if (voucher.max_discount_amount) {
+      description += ` (tối đa ${voucher.max_discount_amount.toLocaleString('vi-VN')}đ)`;
+    }
+  } else {
+    description += `${voucher.discount_value.toLocaleString('vi-VN')}đ`;
+  }
+
+  if (voucher.min_order_amount > 0) {
+    description += ` cho đơn hàng từ ${voucher.min_order_amount.toLocaleString('vi-VN')}đ`;
+  }
+  return description;
+};
 
 export function CheckoutPage() {
   // Lấy state và actions từ "kho" giỏ hàng
@@ -51,29 +69,29 @@ export function CheckoutPage() {
     checkSessionAndProfile();
   }, []);
 
-const handleApplyVoucher = async () => {
-  if (!voucherCode.trim()) return;
-  setVoucherLoading(true);
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    setVoucherLoading(true);
 
-  const { data, error } = await supabase.functions.invoke('validate-voucher', {
-    body: {
-      voucherCode,
-      orderAmount: totalAmount,
-      eventId: event!.id,
-    },
-  });
+    const { data, error } = await supabase.functions.invoke('validate-voucher', {
+      body: {
+        voucherCode,
+        orderAmount: totalAmount,
+        eventId: event!.id,
+      },
+    });
 
-  if (error) {
-    const msg = await getSupabaseFnError(error);
-    notifications.show({ title: 'Áp dụng thất bại', message: msg, color: 'red' });
+    if (error) {
+      const msg = await getSupabaseFnError(error);
+      notifications.show({ title: 'Áp dụng thất bại', message: msg, color: 'red' });
+      setVoucherLoading(false);
+      return;
+    }
+
+    applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
+    notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
     setVoucherLoading(false);
-    return;
-  }
-
-  applyVoucher({ voucher: data.voucher, discountAmount: data.discountAmount });
-  notifications.show({ title: 'Thành công', message: 'Đã áp dụng voucher!', color: 'green' });
-  setVoucherLoading(false);
-};
+  };
   const validatePhone = (phoneNumber: string): boolean => {
     const phoneRegex = /^0\d{9}$/;
     if (!phoneNumber) {
@@ -185,11 +203,8 @@ const handleApplyVoucher = async () => {
   return (
     <Container my="xl" size="xs">
       <Stack gap="xl">
-        {/* Tiêu đề */}
         <Title order={2} ta="center">Xác nhận Đơn hàng</Title>
-
-        {/* Thông tin đơn hàng */}
-        <Paper withBorder p="lg" radius="md" shadow="sm">
+        <Paper withBorder p="lg" radius="md">
           <Title order={4} mb="sm">Sự kiện: {event.title}</Title>
           <Stack gap="sm">
             {ticketDetails.map((item) => (
@@ -200,30 +215,46 @@ const handleApplyVoucher = async () => {
                 </Group>
               )
             ))}
-
             <Divider />
-
             <Group justify="space-between">
               <Text>Tạm tính</Text>
               <Text>{totalAmount.toLocaleString('vi-VN')}đ</Text>
             </Group>
-
             {appliedVoucher && (
-              <Group justify="space-between">
-                <Group gap="xs">
-                  {/* <IconTicket size={16} color="green" /> */}
-                  <Text c="#008a86">Voucher ({appliedVoucher.voucher.code})</Text>
-                  <ActionIcon
-                    variant="transparent"
-                    color="red"
-                    size="sm"
-                    onClick={removeVoucher}
-                  >
-                    <IconX />
-                  </ActionIcon>
+              <>
+                <Group justify="space-between">
+                  <Text c="#008a87">Voucher</Text>
+                  <Text c="#008a87">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')}đ</Text>
                 </Group>
-                <Text c="#008a86">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')}đ</Text>
-              </Group>
+                <Card
+                  withBorder
+                  radius="md"
+                  padding="xs"
+                  w={'100%'}
+                >
+                  <Group wrap="nowrap" align="center">
+                    <ThemeIcon size={48} radius="xl" variant="light" color="teal">
+                      <IconTicket size={28} />
+                    </ThemeIcon>
+                    <Stack gap='xs' w='100%'>
+                      <Group justify='space-between'>
+                        <Badge variant="light" color="teal" radius="sm" size="lg" styles={{ label: { letterSpacing: 0.5 } }}>
+                          {appliedVoucher.voucher.code}
+                        </Badge>
+                        <ActionIcon
+                          variant="transparent"
+                          color="red"
+                          size="sm"
+                          onClick={removeVoucher}
+                        >
+                          <IconX />
+                        </ActionIcon>
+                      </Group>
+                      <Text fz="sm" c="dimmed">{formatVoucherDescription(appliedVoucher.voucher)}</Text>
+                    </Stack>
+                  </Group>
+                </Card>
+              </>
             )}
 
             {/* Mã giảm giá */}
@@ -246,12 +277,9 @@ const handleApplyVoucher = async () => {
                   ) : null
                 }
               />
-
-              <Button onClick={ () => {handleApplyVoucher(); setVoucherCode('');}} c="#fff" bg={'#008a87'} loading={voucherLoading}>Áp dụng</Button>
+              <Button onClick={() => { handleApplyVoucher(); setVoucherCode(''); }} c="#fff" bg={'#008a87'} loading={voucherLoading}>Áp dụng</Button>
             </Group>
-
             <Divider />
-
             <Group justify="space-between">
               <Text fw={700} size="lg">Tổng cộng</Text>
               <Text fw={700} size="lg">{finalAmount.toLocaleString('vi-VN')}đ</Text>
@@ -259,12 +287,11 @@ const handleApplyVoucher = async () => {
           </Stack>
         </Paper>
 
-
-
         {/* Thông tin khách hàng */}
-        <Paper withBorder p="lg" radius="md" shadow="sm">
+        <Paper withBorder p="lg" radius="md">
           <Stack>
             <Title order={4} c='#008a87'>Thông tin khách hàng</Title>
+            <Divider/>
             {sessionChecked && user ? (
               <>
                 <Stack>
@@ -293,19 +320,16 @@ const handleApplyVoucher = async () => {
                       styles={{
                         input: {
                           textAlign: "right",
-                          paddingRight:"10px"
+                          paddingRight: "10px"
                         },
                       }}
                     />
                   </Group>
                 </Stack>
-
-
               </>
             ) : (
               <Text size="sm">Bạn cần đăng nhập để hoàn tất đơn hàng.</Text>
             )}
-
             <Button
               size="md"
               bg="#008a87"
@@ -318,6 +342,5 @@ const handleApplyVoucher = async () => {
         </Paper>
       </Stack>
     </Container>
-
   );
 }

@@ -6,6 +6,7 @@ import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '../../utils/formatters';
 import { IconAlertCircle, IconCircleCheck, IconX, IconScan, IconCamera, IconCameraOff } from '@tabler/icons-react';
+import { getSupabaseFnError } from '../../utils/supabaseFnError';
 
 interface EventSelectItem { value: string; label: string; }
 interface ModalData {
@@ -164,15 +165,17 @@ export function CheckInPage() {
       });
 
       if (error) {
-        const errorBody = JSON.parse(error.context.body);
-        setModalData({ status: 'INVALID', ticket: null, message: errorBody.error });
-      } else {
-        setModalData({ status: data.status, ticket: data.ticket, message: null });
-        if (data.status === 'SUCCESS') {
-          setTimeout(() => handleModalClose(), 2000);
-        }
+        // Sử dụng hàm getSupabaseFnError để lấy lỗi chi tiết
+        const message = await getSupabaseFnError(error);
+        throw new Error(message);
+      }
+      
+      setModalData({ status: data.status, ticket: data.ticket, message: null });
+      if (data.status === 'SUCCESS') {
+        setTimeout(() => handleModalClose(), 2000);
       }
     } catch (err: any) {
+      // Khối catch này giờ sẽ nhận được thông báo lỗi chính xác
       setModalData({ status: 'INVALID', ticket: null, message: err.message });
     } finally {
       setLoading(false);
@@ -206,7 +209,7 @@ export function CheckInPage() {
             searchable
           />
         ) : (
-          <Stack gap={5}>
+          <Stack>
             <Group justify="center" align="center" gap="xs">
               <Text>Sự kiện:</Text>
               <Text c="#008a87" fw={700}>{events.find(e => e.value === selectedEventId)?.label}</Text>

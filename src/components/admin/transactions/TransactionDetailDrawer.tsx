@@ -213,8 +213,8 @@ export function TransactionDetailDrawer({ transactionId, opened, onClose, onSucc
               </Group>
               <Text size="sm"><b>Khách hàng:</b> {transaction.users?.full_name || transaction.users?.email}</Text>
               <Text size="sm"><b>Sự kiện:</b> {transaction.events?.title}</Text>
-              <Tabs defaultValue="tickets">
-                <Tabs.List>
+              <Tabs defaultValue="tickets" variant='pills' radius={'md'}>
+                <Tabs.List justify='center'>
                   <Tabs.Tab value="tickets" leftSection={<IconTicket size={16} />}>Chi tiết vé</Tabs.Tab>
                   <Tabs.Tab value="notes" leftSection={<IconNotes size={16} />}>Ghi chú nội bộ</Tabs.Tab>
                 </Tabs.List>

@@ -67,8 +67,8 @@ export function ProfilePage() {
     <Container>
       <Title order={2} mb="xl">Thông tin cá nhân</Title>
       
-      <Tabs defaultValue="info">
-        <Tabs.List>
+      <Tabs defaultValue="info" variant='pills' radius={'md'}>
+        <Tabs.List justify='center'>
           <Tabs.Tab value="info">Thông tin chung</Tabs.Tab>
           <Tabs.Tab value="password">Đổi mật khẩu</Tabs.Tab>
         </Tabs.List>

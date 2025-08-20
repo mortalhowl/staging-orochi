@@ -189,8 +189,8 @@ export function UserDetailPage() {
         </div>
       </Group>
 
-      <Tabs defaultValue="details">
-        <Tabs.List>
+      <Tabs defaultValue="details" variant='pills' radius={'md'}>
+        <Tabs.List justify='center'>
           <Tabs.Tab value="details">Chi tiết Tài khoản</Tabs.Tab>
           <Tabs.Tab value="history">Lịch sử Giao dịch</Tabs.Tab>
           {(canEditUsers && (user.role === 'staff' || user.role === 'admin')) && <Tabs.Tab value="permissions">Phân quyền</Tabs.Tab>}

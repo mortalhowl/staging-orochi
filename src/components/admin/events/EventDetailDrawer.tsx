@@ -44,8 +44,8 @@ export function EventDetailDrawer({ eventId, opened, onClose, onSuccess, onEdit,
     <Drawer opened={opened} onClose={onClose} title="Chi tiết" position="right" size="md">
       <LoadingOverlay visible={loading} />
       {event && (
-        <Tabs defaultValue="details">
-          <Tabs.List>
+        <Tabs defaultValue="details" variant='pills' radius={'md'}>
+          <Tabs.List justify='center'>
             <Tabs.Tab value="details" leftSection={<IconInfoCircle style={{ width: rem(16), height: rem(16) }} />}>
               Chi tiết
             </Tabs.Tab>

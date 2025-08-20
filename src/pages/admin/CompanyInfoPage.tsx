@@ -143,8 +143,8 @@ export function CompanyInfoPage() {
           <TextInput label="Địa chỉ" {...form.getInputProps('address')} />
           <TextInput label="Số điện thoại" {...form.getInputProps('phone')} />
           <TextInput required label="Email liên hệ" type="email" {...form.getInputProps('email')} />
-          <Tabs defaultValue="upload" mt="md">
-            <Tabs.List>
+          <Tabs defaultValue="upload" variant='pills' radius={'md'}>
+            <Tabs.List justify='center'>
               <Tabs.Tab value="upload" leftSection={<IconPhoto style={{ width: rem(16), height: rem(16) }} />}>Tải lên Logo</Tabs.Tab>
               <Tabs.Tab value="url" leftSection={<IconLink style={{ width: rem(16), height: rem(16) }} />}>Dùng link URL</Tabs.Tab>
             </Tabs.List>

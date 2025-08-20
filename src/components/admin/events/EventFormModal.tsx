@@ -319,7 +319,7 @@ export function EventFormModal({ opened, onClose, onSuccess, eventToEdit }: Even
           {/* Ảnh bìa */}
           <Divider label="Ảnh bìa sự kiện" labelPosition="center" />
           <Tabs defaultValue="upload" variant="pills" radius="md">
-            <Tabs.List>
+            <Tabs.List justify='center'>
               <Tabs.Tab
                 value="upload"
                 leftSection={<IconPhoto size={16} />}

@@ -220,7 +220,7 @@ export function ArticleFormModal({ opened, onClose, onSuccess, events, articleTo
                     {/* Ảnh bìa */}
                     <Divider label="Ảnh bìa bài viết" labelPosition="center" />
                     <Tabs defaultValue="upload" variant="pills" radius="md">
-                        <Tabs.List>
+                        <Tabs.List justify='center'>
                             <Tabs.Tab value="upload" leftSection={<IconPhoto size={16} />}>
                                 Tải lên ảnh
                             </Tabs.Tab>

@@ -61,6 +61,7 @@ function ManualInputTab({ events, ticketTypes, selectedEventId, setSelectedEvent
         <Stack gap="xs" mt="md">
           {guests.map((guest, index) => (
             <Flex key={guest.key} gap="md" align="center">
+              <Text>#{index + 1}</Text>
               <TextInput
                 placeholder="Email"
                 value={guest.email}
@@ -191,8 +192,22 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
           <>
             <Title order={5} mt="md">Xem trước dữ liệu:</Title>
             <Table>
-              <Table.Thead><Table.Tr><Table.Th>Email</Table.Th><Table.Th>Họ tên</Table.Th><Table.Th>Số lượng</Table.Th></Table.Tr></Table.Thead>
-              <Table.Tbody>{guests.map((g, i) => <Table.Tr key={i}><Table.Td>{g.email}</Table.Td><Table.Td>{g.fullName}</Table.Td><Table.Td>{g.quantity}</Table.Td></Table.Tr>)}</Table.Tbody>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>STT</Table.Th>
+                  <Table.Th>Email</Table.Th>
+                  <Table.Th>Họ tên</Table.Th>
+                  <Table.Th>Số lượng</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>{guests.map((g, i) => 
+                <Table.Tr key={i}>
+                  <Table.Td>#{i + 1}</Table.Td>
+                  <Table.Td>{g.email}</Table.Td>
+                  <Table.Td>{g.fullName}</Table.Td>
+                  <Table.Td>{g.quantity}</Table.Td>
+                </Table.Tr>
+              )}</Table.Tbody>
             </Table>
             <Divider />
             <Group justify="space-between">
@@ -216,7 +231,7 @@ export function InvitedTicketsPage() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from('events').select('id, title').order('created_at', { ascending: false });
+      const { data } = await supabase.from('events').select('id, title').eq('is_active', true).order('created_at', { ascending: false });
       if (data) setEvents(data.map(e => ({ value: e.id, label: e.title })));
     };
     fetchEvents();
@@ -240,8 +255,8 @@ export function InvitedTicketsPage() {
   return (
     <Container size="md" mt="md">
       <Title order={2} mb="xl">Vé mời</Title>
-      <Tabs defaultValue="manual">
-        <Tabs.List>
+      <Tabs defaultValue="manual" variant="pills" radius="md">
+        <Tabs.List justify='center'>
           <Tabs.Tab value="manual">Nhập thủ công</Tabs.Tab>
           <Tabs.Tab value="excel">Nhập Excel</Tabs.Tab>
         </Tabs.List>
