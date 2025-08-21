@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Container, Title, Paper, Loader, Center, Text, Accordion, Stack, SimpleGrid, Image, Tabs, Badge, Group, Flex } from '@mantine/core';
+import { Container, Title, Paper, Loader, Center, Text, Stack, Tabs, Badge, Group, Flex, ScrollArea } from '@mantine/core';
 import { supabase } from '../services/supabaseClient';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import qrcode from 'qrcode';
 import { formatDateTime } from '../utils/formatters';
 import { notifications } from '@mantine/notifications';
 import { IconTicket, IconHistory } from '@tabler/icons-react';
-// import { useClipboard } from '@mantine/hooks';
+import { DownloadableTicket } from '../components/public/DownloadableTicket';
 
 // --- TYPE DEFINITIONS ---
 interface AuthContextType { session: Session; }
@@ -16,18 +16,23 @@ interface UserTicket {
   event_id: string;
   event_name: string;
   event_start_time: string;
+  event_end_time: string;
   location: string;
   ticket_id: string;
   ticket_type_name: string;
+  price: number;
 }
 
 interface GroupedTickets {
   [eventId: string]: {
     eventName: string;
     eventStartTime: string;
+    eventEndTime: string;
+    location: string;
     tickets: {
       id: string;
       typeName: string;
+      price: number;
       qrCodeUrl: string;
     }[];
   };
@@ -69,6 +74,8 @@ function MyTicketsTab({ session }: { session: Session }) {
             groups[ticket.event_id] = {
               eventName: ticket.event_name,
               eventStartTime: ticket.event_start_time,
+              eventEndTime: ticket.event_end_time,
+              location: ticket.location, // Lưu lại địa điểm
               tickets: [],
             };
           }
@@ -79,6 +86,7 @@ function MyTicketsTab({ session }: { session: Session }) {
             id: ticket.ticket_id,
             typeName: ticket.ticket_type_name,
             qrCodeUrl: qrCodeUrl,
+            price: ticket.price, // Lưu lại giá vé
           });
         }
 
@@ -100,54 +108,33 @@ function MyTicketsTab({ session }: { session: Session }) {
   }
 
   return Object.keys(groupedTickets).length > 0 ? (
-    <Accordion variant="separated">
+    <Container size="xs" maw={650}>
       {Object.entries(groupedTickets).map(([eventId, group]) => (
-        <Accordion.Item key={eventId} value={group.eventName}>
-          <Accordion.Control>
-            <Title order={4}>{group.eventName}</Title>
-            <Text size="sm" c="dimmed">
-              {formatDateTime(group.eventStartTime)}
-            </Text>
-          </Accordion.Control>
-
-          <Accordion.Panel>
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
-              {group.tickets.map((ticket, index) => (
-                <Group wrap='nowrap' p='xs' key={ticket.id} style={{ border: '1px solid #dee2e6', borderRadius: '5px', position: "relative" }}>
-                  <Stack gap={'xs'}>
-                    <Badge
-                      variant="filled"
-                      style={{ position: "absolute", top: 8, left: 8 }}
-                    >
-                      #{index + 1}
-                    </Badge>
-                    <Text size="xs">Loại vé: {ticket.typeName}</Text>
-                    <Text size="xs">Mã vé:</Text>
-                    <Text
-                      size="xs"
-                      c="#008a87"
-                      style={{ wordBreak: "break-all" }}
-                    >
-                      {ticket.id}
-                    </Text>
-                  </Stack>
-                  <Stack gap={0}>
-                    <Image
-                      src={ticket.qrCodeUrl}
-                      w={120}
-                      h={120}
-                      fit="contain"
-                      alt={`QR Code for ticket ${ticket.id}`}
-                    />
-                    <Text size='xs' fz="9px" ta='center'>Quét mã này tại cổng</Text>
-                  </Stack>
-                </Group>
-              ))}
-            </SimpleGrid>
-          </Accordion.Panel>
-        </Accordion.Item>
+        <Stack key={eventId}>
+          {/* Tiêu đề sự kiện */}
+          <Group justify="space-between" align="center">
+            <Stack gap={0}>
+              <Title order={4} c="#008a87">Sự kiện {group.eventName}</Title>
+              {/* <Text size="sm" c="dimmed">
+                {formatDateTime(group.eventStartTime)}
+              </Text> */}
+            </Stack>
+          </Group>
+          <ScrollArea>
+            {/* Danh sách vé */}
+            {group.tickets.map((ticket, index) => (
+              <DownloadableTicket 
+                key={ticket.id} 
+                ticket={ticket} 
+                group={group} 
+                index={index} 
+                total={group.tickets.length} 
+              />
+            ))}
+          </ScrollArea>
+        </Stack>
       ))}
-    </Accordion>
+    </Container>
   ) : (
     <Container h="calc(80vh)">
       <Center h="100%">
@@ -210,12 +197,18 @@ function TransactionHistoryTab({ session }: { session: Session }) {
           withBorder
           p="xs"
           radius="xs"
+          // onClick={() => {
+          //   if (trans.status === "pending") navigate(`/payment/${trans.id}`);
+          // }}
           onClick={() => {
-            if (trans.status === "pending") navigate(`/payment/${trans.id}`);
+            navigate(`/payment/${trans.id}`);
           }}
           style={{
-            cursor: trans.status === "pending" ? "pointer" : "default",
+            cursor: "pointer"
           }}
+          // style={{
+          //   cursor: trans.status === "pending" ? "pointer" : "default",
+          // }}
         >
           {/* Header: Tên sự kiện + trạng thái */}
           <Group justify="space-between" mb="xs">

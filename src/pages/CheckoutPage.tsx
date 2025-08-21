@@ -4,12 +4,12 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
-import { IconX } from '@tabler/icons-react';
+import { IconUserCircle, IconX } from '@tabler/icons-react';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '../types';
 import { getSupabaseFnError } from '../utils/supabaseFnError';
 import type { Voucher } from '../types'
-import { IconTicket, } from '@tabler/icons-react'
+import { IconTicket, IconTag, IconCalendarClock } from '@tabler/icons-react'
 
 const formatVoucherDescription = (voucher: Voucher) => {
   let description = 'Giảm ';
@@ -201,17 +201,46 @@ export function CheckoutPage() {
   }).filter(Boolean);
 
   return (
-    <Container my="xl" size="xs">
-      <Stack gap="xl">
-        <Title order={2} ta="center">Xác nhận Đơn hàng</Title>
-        <Paper withBorder p="lg" radius="md">
-          <Title order={4} mb="sm">Sự kiện: {event.title}</Title>
-          <Stack gap="sm">
-            {ticketDetails.map((item) => (
+    <Container my="xs" size="xs">
+      <Stack gap="xs">
+        <Title order={3} ta="center">Xác nhận Đơn hàng</Title>
+        <Paper withBorder p="xs" radius="md">
+          <Group justify='space-between' mb="sm">
+            <Group justify='flex-start'>
+              <ThemeIcon size={38} radius="xl" variant="light" color="#008a87">
+                <IconCalendarClock size={25} />
+              </ThemeIcon>
+              <Title order={4} c="#008a87">Sự kiện</Title>
+            </Group>
+            <Badge>{event.title}</Badge>
+          </Group>
+          <Stack gap="xs">
+            {ticketDetails.map((item, index) => (
               item && (
-                <Group key={item.name} justify="space-between">
-                  <Text>{item.name} (x{item.quantity})</Text>
-                  <Text>{item.subtotal.toLocaleString('vi-VN')}đ</Text>
+                // <Group key={item.name} justify="space-between">
+                //   <Text>{item.name} (x{item.quantity})</Text>
+                //   <Text>{item.subtotal.toLocaleString('vi-VN')}đ</Text>
+                // </Group>
+                <Group key={index} justify="space-between">
+                  <Card
+                    withBorder
+                    radius="md"
+                    padding="xs"
+                    w={'100%'}
+                  >
+                    <Group wrap="nowrap" align="center">
+                      <ThemeIcon size={48} radius="xl" variant="light" color="teal">
+                        <IconTicket size={28} />
+                      </ThemeIcon>
+                      <Stack gap='xs' w='100%'>
+                        <Group justify='space-between'>
+                          <Text fz="sm" c="dimmed">Vé {item.name}</Text>
+                          <Text fz="sm" c="dimmed">x{item.quantity}</Text>
+                        </Group>
+                        <Text fz="sm" c="dimmed">{(item.price * item.quantity).toLocaleString("vi-VN")}đ</Text>
+                      </Stack>
+                    </Group>
+                  </Card>
                 </Group>
               )
             ))}
@@ -234,7 +263,7 @@ export function CheckoutPage() {
                 >
                   <Group wrap="nowrap" align="center">
                     <ThemeIcon size={48} radius="xl" variant="light" color="teal">
-                      <IconTicket size={28} />
+                      <IconTag size={28} />
                     </ThemeIcon>
                     <Stack gap='xs' w='100%'>
                       <Group justify='space-between'>
@@ -288,10 +317,15 @@ export function CheckoutPage() {
         </Paper>
 
         {/* Thông tin khách hàng */}
-        <Paper withBorder p="lg" radius="md">
-          <Stack>
-            <Title order={4} c='#008a87'>Thông tin khách hàng</Title>
-            <Divider/>
+        <Paper withBorder p="xs" radius="md">
+          <Stack gap="xs">
+            <Group>
+              <ThemeIcon size={38} radius="xl" variant="light" color="#008a87">
+                <IconUserCircle size={25} />
+              </ThemeIcon>
+              <Title order={4} c='#008a87'>Thông tin khách hàng</Title>
+            </Group>
+            <Divider />
             {sessionChecked && user ? (
               <>
                 <Stack>
