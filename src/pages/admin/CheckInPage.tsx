@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Container, Select, Paper, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
@@ -72,7 +72,6 @@ export function CheckInPage() {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [isCameraInitialized, setIsCameraInitialized] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
@@ -135,7 +134,6 @@ export function CheckInPage() {
       try {
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
         await qrScanner.start(selectedCameraId, config, onScanSuccess, undefined);
-        setIsCameraInitialized(true);
       } catch (err) {
         console.error("Lỗi khởi động camera:", err);
         notifications.show({ 
@@ -144,7 +142,6 @@ export function CheckInPage() {
           color: 'red' 
         });
         setIsCameraOn(false);
-        setIsCameraInitialized(false);
       }
     };
 
@@ -153,7 +150,6 @@ export function CheckInPage() {
       if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
         try {
           await qrScanner.stop();
-          setIsCameraInitialized(false);
         } catch (err) {
           console.error("Lỗi khi tắt camera:", err);
         }
@@ -171,13 +167,13 @@ export function CheckInPage() {
     };
   }, [isCameraOn, selectedEventId, selectedCameraId]);
 
-  const onScanSuccess = useCallback((decodedText: string) => {
+  const onScanSuccess = (decodedText: string) => {
     const scanner = scannerRef.current;
     if (scanner && scanner.getState() === Html5QrcodeScannerState.SCANNING) {
       scanner.pause(true);
     }
     handleTicketLookup(decodedText);
-  }, []);
+  };
 
   const handleModalClose = () => {
     closeModal();
