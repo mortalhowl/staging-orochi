@@ -302,7 +302,7 @@ export function AdminLayout() {
         </Drawer>
       )}
 
-      <AppShell.Main>
+      <AppShell.Main px={0}>
         <Outlet />
       </AppShell.Main>
     </AppShell>

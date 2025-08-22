@@ -118,7 +118,7 @@ export function PublicLayout() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Main pt={60} px="xs">
+      <AppShell.Main pt={60} px="0px">
         <Outlet />
       </AppShell.Main>
 
