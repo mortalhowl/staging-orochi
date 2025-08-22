@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Container, Select, Paper, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
+import { Container, Select, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '../../utils/formatters';
-import { IconAlertCircle, IconCircleCheck, IconX, IconScan, IconCamera, IconCameraOff } from '@tabler/icons-react';
+import { IconAlertCircle, IconCircleCheck, IconX, IconScan, IconCamera, IconCameraOff, IconArrowsLeftRight, IconChecks } from '@tabler/icons-react';
 import { getSupabaseFnError } from '../../utils/supabaseFnError';
 
 interface EventSelectItem { value: string; label: string; }
@@ -73,8 +73,32 @@ export function CheckInPage() {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
+  const [isUsingBackCamera, setIsUsingBackCamera] = useState(true);
 
-   useEffect(() => {
+  const handleToggleCamera = () => {
+    if (!availableCameras.length) return;
+
+    const backCamera = availableCameras.find(c =>
+      c.label.toLowerCase().includes('back')
+    );
+    const frontCamera = availableCameras.find(c =>
+      c.label.toLowerCase().includes('front')
+    );
+
+    if (isUsingBackCamera && frontCamera) {
+      setSelectedCamera(frontCamera.deviceId);
+      setIsUsingBackCamera(false);
+    } else if (!isUsingBackCamera && backCamera) {
+      setSelectedCamera(backCamera.deviceId);
+      setIsUsingBackCamera(true);
+    } else if (availableCameras.length > 0) {
+      // fallback: nếu không tìm thấy thì chọn camera đầu tiên
+      setSelectedCamera(availableCameras[0].deviceId);
+    }
+  };
+
+
+  useEffect(() => {
     const fetchEvents = async () => {
       const { data } = await supabase.from('events').select('id, title').eq('is_active', true);
       if (data) setEvents(data.map(e => ({ value: e.id, label: e.title })));
@@ -92,10 +116,10 @@ export function CheckInPage() {
         // ❌ Không setSelectedCamera tự động nữa
       } catch (error) {
         console.error('Lỗi khi lấy danh sách camera:', error);
-        notifications.show({ 
-          title: 'Lỗi Camera', 
-          message: 'Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', 
-          color: 'red' 
+        notifications.show({
+          title: 'Lỗi Camera',
+          message: 'Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.',
+          color: 'red'
         });
         setIsCameraOn(false);
       }
@@ -136,7 +160,7 @@ export function CheckInPage() {
         const message = await getSupabaseFnError(error);
         throw new Error(message);
       }
-      
+
       setModalData({ status: data.status, ticket: data.ticket, message: null });
       if (data.status === 'SUCCESS') {
         setTimeout(() => handleModalClose(), 2000);
@@ -170,18 +194,20 @@ export function CheckInPage() {
             data={events}
             onChange={(value) => {
               setSelectedEventId(value);
-              setIsCameraOn(true); // tự động bật camera khi chọn sự kiện
+              setIsCameraOn(true);
             }}
             searchable
           />
         ) : (
-          <Stack>
+          <Stack gap={'xs'}>
             <Group justify="center" align="center" gap="xs">
               <Text>Sự kiện:</Text>
-              <Text c="#008a87" fw={700}>{events.find(e => e.value === selectedEventId)?.label}</Text>
+              <Text c="#008a87" fw={700}>
+                {events.find(e => e.value === selectedEventId)?.label}
+              </Text>
             </Group>
 
-            <Paper withBorder p="xs" radius="md">
+            {/* <Paper withBorder p="xs" radius="md">
               <Group justify="space-between">
                 <Text fw={500}>Camera</Text>
                 <Switch
@@ -190,26 +216,44 @@ export function CheckInPage() {
                   thumbIcon={isCameraOn ? <IconCamera size={12} /> : <IconCameraOff size={12} />}
                 />
               </Group>
-            </Paper>
+            </Paper> */}
 
-            {isCameraOn && (
-              <Select
-                label="Chọn camera"
-                placeholder="Chưa chọn camera"
-                value={selectedCamera || null}
-                onChange={(value) => setSelectedCamera(value || '')}
-                data={availableCameras.map(camera => ({
-                  value: camera.deviceId,
-                  label: camera.label || `Camera ${camera.deviceId.slice(0, 8)}`
-                }))}
-              />
-            )}
+            {/* {isCameraOn && ( */}
+            <>
+              <Group justify="space-between" align="center">
+                <Select
+                  // label="Chọn camera"
+                  placeholder="Chưa chọn camera"
+                  value={selectedCamera || null}
+                  onChange={(value) => setSelectedCamera(value || '')}
+                  data={availableCameras.map(camera => ({
+                    value: camera.deviceId,
+                    label: camera.label || `Camera ${camera.deviceId.slice(0, 8)}`
+                  }))}
+                  style={{ flex: 1 }}
+                />
+                <ActionIcon
+                  variant="light"
+                  size={36}
+                  onClick={handleToggleCamera}
+                  title="Đổi camera trước/sau"
+                >
+                  <IconArrowsLeftRight size={18} />
+                </ActionIcon>
+                <Switch
+                  checked={isCameraOn}
+                  onChange={(event) => setIsCameraOn(event.currentTarget.checked)}
+                  thumbIcon={isCameraOn ? <IconCamera size={12} /> : <IconCameraOff size={12} />}
+                />
+              </Group>
+            </>
+            {/* )} */}
 
             <Box
               style={{
                 border: '1px solid #ddd',
                 width: '100%',
-                aspectRatio: '4 / 3',
+                aspectRatio: '1 / 1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -228,11 +272,11 @@ export function CheckInPage() {
                         color: 'red'
                       });
                     }}
-                    constraints={{ 
+                    constraints={{
                       deviceId: selectedCamera,
-                      aspectRatio: 4/3 
+                      aspectRatio: 1 / 1
                     }}
-                    // containerStyle={{ width: '100%', height: '100%' }}
+                  // containerStyle={{ width: '100%', height: '100%' }}
                   />
                 ) : (
                   <Text c="dimmed">Vui lòng chọn camera</Text>
@@ -242,27 +286,39 @@ export function CheckInPage() {
               )}
             </Box>
 
-            <Divider my="md" label="Hoặc" />
-            <TextInput
-              placeholder="Nhập mã vé..."
-              value={ticketIdInput}
-              onChange={(e) => setTicketIdInput(e.currentTarget.value)}
-              onKeyDown={(event) => { if (event.key === 'Enter') handleTicketLookup(ticketIdInput); }}
-              rightSection={
-                ticketIdInput ? (
-                  <ActionIcon
-                    onClick={() => setTicketIdInput('')}
-                    variant="subtle"
-                    color="gray"
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                ) : null
-              }
-            />
-            <Button onClick={() => handleTicketLookup(ticketIdInput)} disabled={!ticketIdInput}>
-              Kiểm tra
-            </Button>
+            <Divider label="Hoặc" />
+
+            <Group wrap='nowrap' justify='space-between'>
+              <TextInput
+                placeholder="Nhập mã vé..."
+                value={ticketIdInput}
+                onChange={(e) => setTicketIdInput(e.currentTarget.value)}
+                onKeyDown={(event) => { if (event.key === 'Enter') handleTicketLookup(ticketIdInput); }}
+                rightSection={
+                  ticketIdInput ? (
+                    <ActionIcon
+                      onClick={() => setTicketIdInput('')}
+                      variant="subtle"
+                      color="gray"
+                    >
+                      <IconX size={16} />
+                    </ActionIcon>
+                  ) : null
+                }
+                style={{ flex: 1 }}
+              />
+              {/* <Button onClick={() => handleTicketLookup(ticketIdInput)} disabled={!ticketIdInput}>
+              Check
+            </Button> */}
+              <ActionIcon
+                variant="light"
+                size={36}
+                onClick={() => handleTicketLookup(ticketIdInput)} disabled={!ticketIdInput}
+                title="Check"
+              >
+                <IconChecks size={18} />
+              </ActionIcon>
+            </Group>
           </Stack>
         )}
       </Container>
