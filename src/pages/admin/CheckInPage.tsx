@@ -129,17 +129,21 @@ export function CheckInPage() {
       getCameras();
     } else {
       setAvailableCameras([]);
-      setSelectedCamera(''); // reset lại khi tắt
+      // setSelectedCamera(''); // reset lại khi tắt
     }
   }, [isCameraOn]);
 
   const handleScanResult = (results: { rawValue: string }[]) => {
     const code = results?.[0]?.rawValue;
-    if (code) handleTicketLookup(code);
+    if (code) {
+      setIsCameraOn(false);
+      handleTicketLookup(code);
+    }
   };
 
   const handleModalClose = () => {
     closeModal();
+    setIsCameraOn(true);
   };
 
   const handleTicketLookup = async (ticketId: string, performCheckIn = false) => {
