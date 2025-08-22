@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Select, Paper, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient';
@@ -9,6 +9,7 @@ import { IconAlertCircle, IconCircleCheck, IconX, IconScan, IconCamera, IconCame
 import { getSupabaseFnError } from '../../utils/supabaseFnError';
 
 interface EventSelectItem { value: string; label: string; }
+interface CameraSelectItem { value: string; label: string; }
 interface ModalData {
   status: 'VALID' | 'ALREADY_USED' | 'INVALID' | 'SUCCESS';
   ticket: any | null;
@@ -30,7 +31,6 @@ function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckI
       <Group>
         <Alert variant="light" color={color} title={title} icon={icon} w="100%">
           <Stack>
-            {/* Nếu là SUCCESS thì chỉ hiển thị message */}
             {data.status === 'SUCCESS' ? (
               <Text fw={500} c="green">Đã Check-in thành công!</Text>
             ) : (
@@ -53,7 +53,6 @@ function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckI
         </Alert>
       </Group>
 
-      {/* Chỉ hiển thị nút check-in khi status = VALID */}
       {data.status === 'VALID' && (
         <Button onClick={() => onCheckIn(data.ticket.id)} loading={loading}>
           Check-in
@@ -63,16 +62,17 @@ function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckI
   );
 }
 
-
-
 export function CheckInPage() {
   const [events, setEvents] = useState<EventSelectItem[]>([]);
+  const [cameras, setCameras] = useState<CameraSelectItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [ticketIdInput, setTicketIdInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isCameraInitialized, setIsCameraInitialized] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
@@ -83,9 +83,46 @@ export function CheckInPage() {
     fetchEvents();
   }, []);
 
+  // Lấy danh sách camera
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length) {
+          const cameraOptions = devices.map(device => ({
+            value: device.id,
+            label: device.label || `Camera ${device.id}`
+          }));
+          setCameras(cameraOptions);
+          if (cameraOptions.length > 0) {
+            setSelectedCameraId(cameraOptions[0].value);
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách camera:", err);
+        notifications.show({ 
+          title: 'Lỗi Camera', 
+          message: 'Không thể lấy danh sách camera. Vui lòng kiểm tra quyền truy cập.', 
+          color: 'red' 
+        });
+      }
+    };
+    
+    if (isCameraOn) {
+      getCameras();
+    }
+  }, [isCameraOn]);
+
   // Effect quản lý camera
   useEffect(() => {
-    if (!selectedEventId) return;
+    if (!selectedEventId || !selectedCameraId || !isCameraOn) return;
+
+    // Đảm bảo phần tử DOM đã được render trước khi khởi tạo scanner
+    const scannerContainer = document.getElementById('qr-scanner-container');
+    if (!scannerContainer) {
+      console.error("Không tìm thấy container cho scanner");
+      return;
+    }
 
     if (!scannerRef.current) {
       scannerRef.current = new Html5Qrcode('qr-scanner-container');
@@ -96,19 +133,18 @@ export function CheckInPage() {
       if (qrScanner.getState() === Html5QrcodeScannerState.SCANNING) return;
 
       try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (cameras && cameras.length) {
-          // Ưu tiên camera sau, nếu không có thì dùng camera đầu tiên
-          const cameraId = cameras.find(c => c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
-          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-          await qrScanner.start(cameraId, config, onScanSuccess, undefined);
-        } else {
-          throw new Error("No cameras found on this device.");
-        }
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        await qrScanner.start(selectedCameraId, config, onScanSuccess, undefined);
+        setIsCameraInitialized(true);
       } catch (err) {
         console.error("Lỗi khởi động camera:", err);
-        notifications.show({ title: 'Lỗi Camera', message: 'Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.', color: 'red' });
+        notifications.show({ 
+          title: 'Lỗi Camera', 
+          message: 'Không thể khởi động camera. Vui lòng kiểm tra lại kết nối.', 
+          color: 'red' 
+        });
         setIsCameraOn(false);
+        setIsCameraInitialized(false);
       }
     };
 
@@ -117,6 +153,7 @@ export function CheckInPage() {
       if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
         try {
           await qrScanner.stop();
+          setIsCameraInitialized(false);
         } catch (err) {
           console.error("Lỗi khi tắt camera:", err);
         }
@@ -129,19 +166,18 @@ export function CheckInPage() {
       stopScanner();
     }
 
-    // Dọn dẹp khi component unmount
     return () => {
       stopScanner();
     };
-  }, [isCameraOn, selectedEventId]);
+  }, [isCameraOn, selectedEventId, selectedCameraId]);
 
-  const onScanSuccess = (decodedText: string) => {
+  const onScanSuccess = useCallback((decodedText: string) => {
     const scanner = scannerRef.current;
     if (scanner && scanner.getState() === Html5QrcodeScannerState.SCANNING) {
       scanner.pause(true);
     }
     handleTicketLookup(decodedText);
-  };
+  }, []);
 
   const handleModalClose = () => {
     closeModal();
@@ -165,7 +201,6 @@ export function CheckInPage() {
       });
 
       if (error) {
-        // Sử dụng hàm getSupabaseFnError để lấy lỗi chi tiết
         const message = await getSupabaseFnError(error);
         throw new Error(message);
       }
@@ -175,7 +210,6 @@ export function CheckInPage() {
         setTimeout(() => handleModalClose(), 2000);
       }
     } catch (err: any) {
-      // Khối catch này giờ sẽ nhận được thông báo lỗi chính xác
       setModalData({ status: 'INVALID', ticket: null, message: err.message });
     } finally {
       setLoading(false);
@@ -196,16 +230,12 @@ export function CheckInPage() {
       </Modal>
 
       <Container size="xs">
-        {/* <Title order={2} ta="center" mb="xl">Check-in</Title> */}
         {!selectedEventId ? (
           <Select
             label="Chọn sự kiện để bắt đầu"
             placeholder="Chọn sự kiện..."
             data={events}
-            onChange={(value) => {
-              setSelectedEventId(value);
-              setIsCameraOn(true); // Tự động bật camera khi chọn sự kiện
-            }}
+            onChange={(value) => setSelectedEventId(value)}
             searchable
           />
         ) : (
@@ -221,23 +251,33 @@ export function CheckInPage() {
                 <Switch
                   checked={isCameraOn}
                   onChange={(event) => setIsCameraOn(event.currentTarget.checked)}
-                  // label={isCameraOn ? "Đang bật" : "Đang tắt"}
                   thumbIcon={isCameraOn ? <IconCamera size={12} /> : <IconCameraOff size={12} />}
                 />
               </Group>
             </Paper>
 
+            {isCameraOn && cameras.length > 0 && (
+              <Select
+                label="Chọn camera"
+                placeholder="Chọn camera..."
+                value={selectedCameraId}
+                onChange={(value) => setSelectedCameraId(value)}
+                data={cameras}
+              />
+            )}
+
             <Box
               style={{
                 border: '1px solid #ddd',
                 width: '100%',
-                aspectRatio: '4 / 3', // hoặc '16 / 9'
+                aspectRatio: '4 / 3',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                minHeight: '300px'
               }}
             >
-              {isCameraOn ? (
+              {isCameraOn && selectedCameraId ? (
                 <Box
                   id="qr-scanner-container"
                   style={{ width: '100%', height: '100%' }}
@@ -246,6 +286,7 @@ export function CheckInPage() {
                 <Text c="dimmed">Camera đang tắt</Text>
               )}
             </Box>
+            
             <Divider my="md" label="Hoặc" />
             <TextInput
               placeholder="Nhập mã vé..."

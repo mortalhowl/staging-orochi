@@ -10,21 +10,21 @@ export function UpdatePasswordPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isValidating, setIsValidating] = useState(true); // State để kiểm tra token
+  const [isValidating, setIsValidating] = useState(true);
 
-  // useEffect này sẽ kiểm tra tính hợp lệ của session
   useEffect(() => {
-    const validateRecoverySession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Supabase sẽ tạo một session tạm thời sau khi click link
-      // Chúng ta cần kiểm tra xem session này có tồn tại và hợp lệ không
-      if (!session || session.user.aud !== 'authenticated') {
-        setError('Link không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.');
-      }
-      setIsValidating(false);
-    };
-    validateRecoverySession();
+    // KIỂM TRA "VÉ VÀO CỬA"
+    const isRecovering = sessionStorage.getItem('isRecoveringPassword') === 'true';
+
+    if (!isRecovering) {
+      setError('Link không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu một link mới.');
+    }
+    setIsValidating(false);
+
+    // Dọn dẹp "vé" sau khi đã kiểm tra
+    return () => {
+        sessionStorage.removeItem('isRecoveringPassword');
+    }
   }, []);
 
   const form = useForm({
@@ -55,6 +55,8 @@ export function UpdatePasswordPage() {
       });
 
       await supabase.auth.signOut();
+      // Xóa "vé" sau khi thành công
+      sessionStorage.removeItem('isRecoveringPassword');
       setTimeout(() => navigate('/admin/login'), 2000);
 
     } catch (err: any) {
@@ -66,9 +68,9 @@ export function UpdatePasswordPage() {
 
   return (
     <Center h="100vh" bg="gray.1">
-      <Container size="xs" w="100%">
+      <Container size="xs">
         <Title order={2} ta="center" mb="xl">Đặt lại Mật khẩu</Title>
-        <Paper withBorder shadow="md" p="xl" radius="md">
+        <Paper withBorder shadow="md" p="xl" radius="md" w={400}>
           {isValidating ? (
             <Center><Loader /></Center>
           ) : error ? (
