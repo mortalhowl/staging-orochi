@@ -74,7 +74,7 @@ export function CheckInPage() {
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
 
-  useEffect(() => {
+   useEffect(() => {
     const fetchEvents = async () => {
       const { data } = await supabase.from('events').select('id, title').eq('is_active', true);
       if (data) setEvents(data.map(e => ({ value: e.id, label: e.title })));
@@ -89,17 +89,7 @@ export function CheckInPage() {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
         setAvailableCameras(cameras);
-        
-        // Tự động chọn camera sau nếu có
-        const backCamera = cameras.find(camera => 
-          camera.label.toLowerCase().includes('back')
-        );
-        
-        if (backCamera) {
-          setSelectedCamera(backCamera.deviceId);
-        } else if (cameras.length > 0) {
-          setSelectedCamera(cameras[0].deviceId);
-        }
+        // ❌ Không setSelectedCamera tự động nữa
       } catch (error) {
         console.error('Lỗi khi lấy danh sách camera:', error);
         notifications.show({ 
@@ -115,11 +105,13 @@ export function CheckInPage() {
       getCameras();
     } else {
       setAvailableCameras([]);
+      setSelectedCamera(''); // reset lại khi tắt
     }
   }, [isCameraOn]);
 
-  const handleScanResult = (result: string) => {
-    handleTicketLookup(result);
+  const handleScanResult = (results: { rawValue: string }[]) => {
+    const code = results?.[0]?.rawValue;
+    if (code) handleTicketLookup(code);
   };
 
   const handleModalClose = () => {
@@ -178,7 +170,7 @@ export function CheckInPage() {
             data={events}
             onChange={(value) => {
               setSelectedEventId(value);
-              setIsCameraOn(true); // Tự động bật camera khi chọn sự kiện
+              setIsCameraOn(true); // tự động bật camera khi chọn sự kiện
             }}
             searchable
           />
@@ -200,10 +192,11 @@ export function CheckInPage() {
               </Group>
             </Paper>
 
-            {isCameraOn && availableCameras.length > 1 && (
+            {isCameraOn && (
               <Select
                 label="Chọn camera"
-                value={selectedCamera}
+                placeholder="Chưa chọn camera"
+                value={selectedCamera || null}
                 onChange={(value) => setSelectedCamera(value || '')}
                 data={availableCameras.map(camera => ({
                   value: camera.deviceId,
@@ -224,27 +217,31 @@ export function CheckInPage() {
               }}
             >
               {isCameraOn ? (
-                <Scanner
-                  onDecode={handleScanResult}
-                  onError={(error) => {
-                    console.error('Lỗi camera:', error);
-                    notifications.show({
-                      title: 'Lỗi Camera',
-                      message: 'Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.',
-                      color: 'red'
-                    });
-                  }}
-                  constraints={{ 
-                    deviceId: selectedCamera,
-                    facingMode: selectedCamera ? undefined : 'environment',
-                    aspectRatio: 4/3 
-                  }}
-                  containerStyle={{ width: '100%', height: '100%' }}
-                />
+                selectedCamera ? (
+                  <Scanner
+                    onScan={handleScanResult}
+                    onError={(error) => {
+                      console.error('Lỗi camera:', error);
+                      notifications.show({
+                        title: 'Lỗi Camera',
+                        message: 'Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.',
+                        color: 'red'
+                      });
+                    }}
+                    constraints={{ 
+                      deviceId: selectedCamera,
+                      aspectRatio: 4/3 
+                    }}
+                    // containerStyle={{ width: '100%', height: '100%' }}
+                  />
+                ) : (
+                  <Text c="dimmed">Vui lòng chọn camera</Text>
+                )
               ) : (
                 <Text c="dimmed">Camera đang tắt</Text>
               )}
             </Box>
+
             <Divider my="md" label="Hoặc" />
             <TextInput
               placeholder="Nhập mã vé..."
