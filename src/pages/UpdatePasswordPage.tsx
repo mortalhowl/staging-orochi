@@ -10,20 +10,21 @@ export function UpdatePasswordPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isValidating, setIsValidating] = useState(true);
+  const [isValidating, setIsValidating] = useState(true); // State để kiểm tra token
 
-  // useEffect này chỉ chạy một lần để kiểm tra xem người dùng có thực sự
-  // đang trong một phiên đổi mật khẩu hay không.
+  // useEffect này sẽ kiểm tra tính hợp lệ của session
   useEffect(() => {
-    const validateSession = async () => {
+    const validateRecoverySession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      // Nếu không có session hoặc session không phải là loại 'recovery', điều hướng đi
+      
+      // Supabase sẽ tạo một session tạm thời sau khi click link
+      // Chúng ta cần kiểm tra xem session này có tồn tại và hợp lệ không
       if (!session || session.user.aud !== 'authenticated') {
-        setError('Link không hợp lệ hoặc đã hết hạn.');
+        setError('Link không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.');
       }
       setIsValidating(false);
     };
-    validateSession();
+    validateRecoverySession();
   }, []);
 
   const form = useForm({

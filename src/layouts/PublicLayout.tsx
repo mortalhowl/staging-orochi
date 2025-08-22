@@ -28,9 +28,13 @@ export function PublicLayout() {
       if (!error) setUserProfile(data);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       fetchProfile(session?.user ?? null);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/update-password');
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
