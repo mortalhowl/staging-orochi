@@ -33,7 +33,7 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
       {/* Ô tìm kiếm chiếm 6 cột trên tổng 12 => 1/2 */}
       <Grid.Col span={{ base: 12, md: 6 }}>
         <TextInput
-          placeholder="Tìm Mã ĐH, Email..."
+          placeholder="Tìm Mã ĐH, Email, SĐT..."
           leftSection={<IconSearch size={16} />}
           value={filters.search}
           onChange={(e) => handleFilterChange('search', e.currentTarget.value)}

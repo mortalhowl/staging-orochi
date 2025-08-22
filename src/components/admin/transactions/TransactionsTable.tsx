@@ -47,18 +47,6 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
           }
         />
       </Table.Td>)}
-      <Table.Td>
-        <Group gap="xs" wrap="nowrap">
-          <Tooltip label={trans.id}>
-            <Text truncate maw={200}>{trans.id}</Text>
-          </Tooltip>
-          <Tooltip label="Sao chép Mã ĐH">
-            <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(trans.id); }}>
-              <IconCopy size={14} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Table.Td>
       {/* <Table.Td>{trans.users?.email || 'N/A'}</Table.Td> */}
       <Table.Td>
         <Group align="center" gap="xs" wrap="nowrap">
@@ -68,6 +56,7 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
               <Box w={150}>
                 <Text truncate maw={150} size="sm" fw={500}>{trans.users?.full_name}</Text>
                 <Text truncate maw={150} size="xs" c="dimmed">{trans.users?.email}</Text>
+                <Text truncate maw={150} size="xs" c="dimmed">{trans.users?.phone}</Text>
               </Box>
             </Group>
           </Tooltip>
@@ -80,7 +69,18 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
             </ActionIcon>
           </Tooltip>
         </Group>
-
+      </Table.Td>
+      <Table.Td>
+        <Group gap="xs" wrap="nowrap">
+          <Tooltip label={trans.id}>
+            <Text truncate maw={200}>{trans.id}</Text>
+          </Tooltip>
+          <Tooltip label="Sao chép Mã ĐH">
+            <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(trans.id); }}>
+              <IconCopy size={14} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Table.Td>
       <Table.Td>{trans.events?.title || 'N/A'}</Table.Td>
       <Table.Td>{trans.total_amount.toLocaleString('vi-VN')}đ</Table.Td>
@@ -109,8 +109,8 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
                     indeterminate={selection.length > 0 && selection.length < selectableIds.length}
                   />
                 </Table.Th>)}
-              <Table.Th>Mã ĐH</Table.Th>
               <Table.Th>Khách hàng</Table.Th>
+              <Table.Th>Mã ĐH</Table.Th>
               <Table.Th>Sự kiện</Table.Th>
               <Table.Th>Tổng tiền</Table.Th>
               <Table.Th>Trạng thái</Table.Th>

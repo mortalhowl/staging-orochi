@@ -105,7 +105,7 @@ const [transactions, setTransactions] = useState<TWD[]>([]);
       };
 
       const dataPromise = supabase.rpc('search_transactions', rpcParams)
-        .select('*, users(email, full_name), events(title)')
+        .select('*, users(email, phone, full_name), events(title)')
         .order('created_at', { ascending: false })
         .range(from, to);
       

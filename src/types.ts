@@ -65,6 +65,7 @@ export interface TransactionWithDetails {
   users: {
     email: string;
     full_name: string | null;
+    phone: string | null;
   } | null;
   events: {
     title: string;
@@ -80,10 +81,12 @@ export interface FullTicketDetails {
   created_at: string;
   customer_name: string;
   customer_email: string;
+  customer_phone: string | null; // Thêm SĐT
   event_name: string;
   ticket_type_name: string;
-  checked_in_by_name: string | null; 
+  checked_in_by_name: string | null;
   status: 'active' | 'disabled';
+  transaction_id: string; // Thêm Mã GD
 }
 
 export type UserRole = 'admin' | 'staff' | 'viewer';

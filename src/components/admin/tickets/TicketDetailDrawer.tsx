@@ -84,7 +84,7 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess, canEd
                 {qrCodeUrl && <Image src={qrCodeUrl} w={200} h={200} />}
                 <Group wrap='nowrap' gap="xs">
                   <Text c="dimmed" size="sm" style={{ wordBreak: 'break-all' }}>{ticket.id}</Text>
-                  <Tooltip label="Sao chép Mã ĐH">
+                  <Tooltip label="Sao chép Mã vé">
                     <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(ticket.id); }}>
                       <IconCopy size={14} />
                     </ActionIcon>
@@ -94,9 +94,11 @@ export function TicketDetailDrawer({ ticketId, opened, onClose, onSuccess, canEd
             </Paper>
             <Stack mt="md" gap="xs">
               <Title order={4}>{ticket.event_name}</Title>
+              <Text><b>Mã GD:</b> {ticket.transaction_id}</Text>
               <Text><b>Loại vé:</b> {ticket.ticket_type_name}</Text>
               <Text><b>Khách hàng:</b> {ticket.customer_name}</Text>
               <Text><b>Email:</b> {ticket.customer_email}</Text>
+              <Text><b>SĐT:</b> {ticket.customer_phone || 'N/A'}</Text>
               <Group><Text><b>Nguồn gốc:</b></Text><Badge color={ticket.is_invite ? 'violet' : 'blue'}>{ticket.is_invite ? 'Vé mời' : 'Vé bán'}</Badge></Group>
               <Group><Text><b>Check-in:</b></Text><Badge color={ticket.is_used ? 'green' : 'gray'}>{ticket.is_used ? 'Đã dùng' : 'Chưa dùng'}</Badge></Group>
               <Group><Text><b>Trạng thái vé:</b></Text><Badge color={ticket.status === 'active' ? 'teal' : 'red'}>{ticket.status === 'active' ? 'Hoạt động' : 'Vô hiệu hóa'}</Badge></Group>

@@ -148,6 +148,7 @@ export function IssuedTicketsPage() {
         'Mã vé': ticket.id,
         'Khách hàng': ticket.customer_name,
         'Email': ticket.customer_email,
+        'Số điện thoại': ticket.customer_phone,
         'Sự kiện': ticket.event_name,
         'Loại vé': ticket.ticket_type_name,
         'Nguồn gốc': ticket.is_invite ? 'Vé mời' : 'Vé bán',

@@ -29,7 +29,7 @@ export function TicketsToolbar({ filters, setFilters }: TicketsToolbarProps) {
     <Grid gutter="md" mb="md">
     <Grid.Col span={{ base: 12, md: 6 }}>
       <TextInput
-        placeholder="Tìm Mã vé, Tên, Email..."
+        placeholder="Tìm Mã vé, Tên, Email, SĐT..."
         leftSection={<IconSearch size={16} />}
         value={filters.search}
         onChange={(e) => handleFilterChange('search', e.currentTarget.value)}
