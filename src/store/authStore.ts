@@ -1,16 +1,18 @@
 import { create } from 'zustand';
 import { supabase } from '../services/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import type { Permission, UserProfile } from '../types'; 
+import type { Permission, UserProfile } from '../types';
 
 interface AuthState {
   session: Session | null;
   userProfile: UserProfile | null;
   permissions: Permission[];
   isLoading: boolean;
+  authError: string | null;
   initListener: () => () => void;
   logout: () => Promise<void>;
   hasEditPermission: (moduleCode: string) => boolean;
+  clearAuthError: () => void;
 }
 
 // Hàm trợ giúp để lấy dữ liệu session
@@ -29,9 +31,15 @@ const fetchUserSessionData = async (session: Session | null) => {
     // *** BƯỚC KIỂM TRA BẢO MẬT QUAN TRỌNG ***
     // Nếu tài khoản bị vô hiệu hóa, tự động đăng xuất và trả về trạng thái rỗng.
     if (userProfile?.status === 'disabled') {
-        console.warn(`[Auth] Access denied for disabled user: ${userProfile.email}`);
-        await supabase.auth.signOut();
-        return { session: null, userProfile: null, permissions: [], isLoading: false };
+      await supabase.auth.signOut();
+      // Trả về trạng thái lỗi
+      return {
+        session: null,
+        userProfile: null,
+        permissions: [],
+        isLoading: false,
+        authError: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.'
+      };
     }
 
     let userPermissions: Permission[] = [];
@@ -51,7 +59,7 @@ const fetchUserSessionData = async (session: Session | null) => {
   } catch (error) {
     console.error("Auth Store Error:", error);
     await supabase.auth.signOut();
-    return { session: null, userProfile: null, permissions: [], isLoading: false };
+    return { session: null, userProfile: null, permissions: [], isLoading: false, authError: 'Đã có lỗi xảy ra khi lấy thông tin tài khoản.' };
   }
 };
 
@@ -60,6 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userProfile: null,
   permissions: [],
   isLoading: true,
+  authError: null,
 
   initListener: () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -74,6 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await supabase.auth.signOut();
   },
+
+  clearAuthError: () => set({ authError: null }),
 
   hasEditPermission: (moduleCode: string) => {
     const { userProfile, permissions } = get();

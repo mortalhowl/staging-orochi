@@ -6,12 +6,26 @@ import { useState, useEffect } from 'react';
 import { IconLogout, IconTicket, IconSun, IconMoon } from '@tabler/icons-react';
 import type { UserProfile } from '../types';
 import { Footer } from '../components/public/Footer';
+import { useAuthStore } from '../store/authStore'; // Import store
+import { notifications } from '@mantine/notifications';
 
 export function PublicLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const { authError, clearAuthError } = useAuthStore();
+
+  useEffect(() => {
+    if (authError) {
+      notifications.show({
+        title: 'Lỗi Đăng nhập',
+        message: authError,
+        color: 'red',
+      });
+      clearAuthError(); // Xóa lỗi sau khi đã hiển thị
+    }
+  }, [authError, clearAuthError]);
 
   useEffect(() => {
     const fetchProfile = async (user: User | null) => {
@@ -31,7 +45,7 @@ export function PublicLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       fetchProfile(session?.user ?? null);
-      
+
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/update-password');
       }
@@ -48,7 +62,7 @@ export function PublicLayout() {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.href },
+      // Bỏ redirectTo để Supabase dùng URL đã cấu hình, giúp URL sạch hơn
     });
   };
 
@@ -96,14 +110,14 @@ export function PublicLayout() {
                 >
                   Vé của tôi
                 </Menu.Item>
-                              <Menu.Item
-                leftSection={
-                  colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
-                }
-                onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
-              >
-                Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
-              </Menu.Item>
+                <Menu.Item
+                  leftSection={
+                    colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
+                  }
+                  onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
+                >
+                  Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
+                </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   color="red"
