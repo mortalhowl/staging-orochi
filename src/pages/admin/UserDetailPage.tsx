@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Title, Paper, Loader, Center, Alert, Text, Stack, Group, Button, Table, Checkbox, Tabs, Avatar, PasswordInput, Badge, Flex, Divider } from '@mantine/core';
+import { Container, Title, Paper, Loader, Center, Alert, Text, Stack, Group, Button, Table, Checkbox, Tabs, Avatar, PasswordInput, Badge, Card, Flex } from '@mantine/core';
 import { supabase } from '../../services/supabaseClient';
 import type { UserProfile } from '../../types';
 import { notifications } from '@mantine/notifications';
@@ -8,6 +8,7 @@ import { modals } from '@mantine/modals';
 import { formatDateTime } from '../../utils/formatters';
 import { UserTransactions } from '../../components/admin/users/UserTransactions';
 import { useAuthStore } from '../../store/authStore';
+import { IconInfoCircle } from '@tabler/icons-react'
 
 interface Module {
   id: string;
@@ -163,121 +164,181 @@ export function UserDetailPage() {
   if (error) return <Alert color="red">{error}</Alert>;
   if (!user) return <Center><Text>Không tìm thấy người dùng.</Text></Center>;
 
-  // const breadcrumbs = [
-  //   { title: 'Quản lý Người dùng', href: '/admin/users' },
-  //   { title: user.full_name || user.email || 'Chi tiết', href: '#' },
-  // ].map((item, index) => (
-  //   <Anchor component={Link} to={item.href} key={index}>
-  //     {item.title}
-  //   </Anchor>
-  // ));
-
   return (
-    <Container>
-      {/* <Breadcrumbs mb="xl">{breadcrumbs}</Breadcrumbs> */}
-      <Group mb="xs" wrap='nowrap'>
-        <Stack justify="center" align='center'>
-          <Avatar src={user.avatar_url} size="xl" radius="50px" style={{ border: '1.5px solid #ccc' }} />
-          <Badge color={user.status === 'active' ? 'green' : 'red'}>
-            {user.status === 'active' ? 'Đang hoạt động' : 'Vô hiệu hóa'}
-          </Badge>
-        </Stack>
-        <div>
-          <Title order={2}>{user.full_name}</Title>
-          <Text c="dimmed">{user.email}</Text>
-          <Text><b>Ngày tạo:</b> {formatDateTime(user.created_at)}</Text>
-        </div>
-      </Group>
+    <Container size="1200">
+      <Flex
+        direction={{ base: "column", md: "row" }}
+        h="88vh"
+        gap={10}
+      >
+        <Paper withBorder p="xs" flex={2}>
+          <Stack justify="center" align='center' p='md' gap={10}>
+            <Avatar src={user.avatar_url} size="150" radius="50%" style={{ border: '1.5px solid #ccc' }} />
+            <Title order={4}>{user.full_name}</Title>
+            <Badge color={user.status === 'active' ? 'green' : 'red'}>
+              {user.status === 'active' ? 'Đang hoạt động' : 'Vô hiệu hóa'}
+            </Badge>
+          </Stack>
+          <Stack gap={10} p="xs">
+            <Text c="dimmed"><b>Email:</b> {user.email}</Text>
+            <Text c="dimmed"><b>Phone:</b> {user.phone || 'N/A'}</Text>
+            <Text c="dimmed"><b>Ngày tạo:</b> {formatDateTime(user.created_at)}</Text>
+          </Stack>
 
-      <Tabs defaultValue="details" variant='pills' radius={'md'}>
-        <Tabs.List justify='center'>
-          <Tabs.Tab value="details">Chi tiết Tài khoản</Tabs.Tab>
-          <Tabs.Tab value="history">Lịch sử Giao dịch</Tabs.Tab>
-          {(canEditUsers && (user.role === 'staff' || user.role === 'admin')) && <Tabs.Tab value="permissions">Phân quyền</Tabs.Tab>}
-        </Tabs.List>
+        </Paper>
 
-        <Tabs.Panel value="details" pt="md">
-          <Paper withBorder p="md" radius="md">
-            <Stack>
-              {canEditUsers && (user.role === 'staff' || user.role === 'admin') && (
-                <>
-                  <Flex gap="md" align="center">
-                    <PasswordInput label="Đặt mật khẩu mới" value={newPassword} onChange={(e) => setNewPassword(e.currentTarget.value)} style={{ flex: 2 }} />
-                    <Button onClick={() => handleAdminAction('update_password')} disabled={!newPassword} style={{ alignSelf: 'flex-end' }}>Đổi mật khẩu</Button>
-                    <Button onClick={() => handleAdminAction('send_reset_password')} variant="light" style={{ alignSelf: 'flex-end' }}>Gửi link</Button>
-                  </Flex>
-                  <Divider my="xs" />
-                </>
-              )}
-
-              {/* Phần hành động nguy hiểm giờ đây áp dụng cho tất cả các vai trò */}
-              {canEditUsers && (
-                <Flex justify="flex-end" gap="md">
-                  {user.status === 'active' ? (
-                    <Button onClick={() => handleAdminAction('disable_user')} color="orange">Vô hiệu hóa</Button>
-                  ) : (
-                    <Button onClick={() => handleAdminAction('enable_user')} color="teal">Kích hoạt</Button>
+        <Paper withBorder p="xs" maw={797} flex={5}>
+          <Tabs defaultValue="details" radius={'md'}>
+            <Tabs.List >
+              <Tabs.Tab value="details">Chi tiết</Tabs.Tab>
+              <Tabs.Tab value="history">Lịch sử</Tabs.Tab>
+              {(canEditUsers && (user.role === 'staff' || user.role === 'admin')) && <Tabs.Tab value="permissions">Phân quyền</Tabs.Tab>}
+            </Tabs.List>
+            {(canEditUsers && user.role !== "admin") ? (
+              <Tabs.Panel value="details" pt="md">
+                <Stack gap="md">
+                  {(user.role === "staff") && (
+                    <Card withBorder radius="md" p="md" shadow='none'>
+                      <Group>
+                        <PasswordInput
+                          placeholder='Nhập mật khẩu mới'
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.currentTarget.value)}
+                          style={{ flex: 1 }}
+                        />
+                        <Group justify='center' align='center'>
+                          <Button
+                            onClick={() => handleAdminAction("update_password")}
+                            disabled={!newPassword}
+                          >
+                            Đổi mật khẩu
+                          </Button>
+                          <Button
+                            onClick={() => handleAdminAction("send_reset_password")}
+                            variant="light"
+                          >
+                            Gửi link đặt lại
+                          </Button>
+                        </Group>
+                      </Group>
+                    </Card>
                   )}
-                  <Button onClick={() => handleAdminAction('delete_user')} color="red">Xóa tài khoản</Button>
-                </Flex>
-              )}
-            </Stack>
-          </Paper>
-        </Tabs.Panel>
-        <Tabs.Panel value="history" pt="md">
-          <UserTransactions userId={userId!} />
-        </Tabs.Panel>
-        {user.role === 'admin' ? (
-          <Tabs.Panel value="permissions" pt="md">
-            <Badge color="blue" variant="light" size='xl' mb="md">
-              Full permissions for staff users
-            </Badge></Tabs.Panel>
-        ) : user.role === 'staff' && canEditUsers ? (
-          <Tabs.Panel value="permissions" pt="md">
-            <Paper withBorder p="md" radius="md">
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Module</Table.Th>
-                    <Table.Th>Quyền Xem</Table.Th>
-                    <Table.Th>Quyền Sửa</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {modules.filter(m => !ADMIN_ONLY_MODULES.includes(m.code)).map(module => (
-                    <Table.Tr key={module.id}>
-                      <Table.Td>
-                        {module.name}
-                        {ACTION_ONLY_MODULES.includes(module.code) && <Text size="xs" c="dimmed">Quyền xem đã bao gồm quyền thực hiện</Text>}
-                      </Table.Td>
-                      <Table.Td>
-                        <Checkbox
-                          checked={permissions[module.id]?.canView || false}
-                          onChange={(e) => handlePermissionChange(module.id, 'canView', e.currentTarget.checked)}
-                        />
-                      </Table.Td>
-                      <Table.Td>
-                        <Checkbox
-                          checked={permissions[module.id]?.canEdit || false}
-                          onChange={(e) => handlePermissionChange(module.id, 'canEdit', e.currentTarget.checked)}
-                          // Vô hiệu hóa nếu không có quyền xem HOẶC là module hành động
-                          disabled={!permissions[module.id]?.canView || ACTION_ONLY_MODULES.includes(module.code)}
-                        />
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-              <Group justify="flex-end" mt="xl">
-                <Button onClick={handleSaveChanges} loading={saving}>
-                  Lưu thay đổi
-                </Button>
-              </Group>
-            </Paper>
-          </Tabs.Panel>
-        ) : null}
+                <Flex gap={10} direction={{ base: "column", md: "row" }}>
+                  <Alert
+                    icon={<IconInfoCircle />}
+                    title="Vô hiệu hóa"
+                    color={user.status === "active" ? "orange" : "teal"}
+                    variant="light"
+                    radius="md"
+                    style={{
+                      borderColor: user.status === "active" ? "orange" : "teal",
+                      flex: 1
+                    }}
+                  >
+                    <Stack>
+                      <Text size='sm'><b>Vô hiệu hóa</b> tài khoản sẽ an toàn hơn việc <b>Xóa tài khoản</b>. Khuyên nên dùng chức năng này.</Text>
+                      {user.status === "active" ? (
+                        <Button
+                          onClick={() => handleAdminAction("disable_user")}
+                          color="orange"
+                        >
+                          Vô hiệu hóa
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleAdminAction("enable_user")}
+                          color="teal"
+                        >
+                          Kích hoạt
+                        </Button>
+                      )}
+                    </Stack>
+                  </Alert>
+                  <Alert
+                    icon={<IconInfoCircle />}
+                    title="Hành động nguy hiểm"
+                    color="red"
+                    variant="light"
+                    radius="md"
+                    style={{ borderColor: "red", flex: 1}}
+                  >
+                    <Stack>
+                      <Text size='sm'>Xóa tài khoản thì sẽ không thể khôi phục. Nếu tài khoản đã có giao dịch thì không thể xóa.</Text>
+                      <Button
+                        onClick={() => handleAdminAction("delete_user")}
+                        color="red"
+                      >
+                        Xóa tài khoản
+                      </Button>
+                    </Stack>
+                  </Alert>
+                  </Flex>
+                </Stack>
+              </Tabs.Panel>
+            ) : (
+              <Tabs.Panel value="details" pt="md" h="80vh">
+                <Stack gap="md" justify='center' align='center' h={'100%'}>
+                  <Text c="dimmed" size='sm'>Không thể thao tác với tài khoản Admin.</Text>
+                </Stack>
+              </Tabs.Panel>
+            )}
+            <Tabs.Panel value="history" pt="md">
+              <UserTransactions userId={userId!} />
+            </Tabs.Panel>
 
-      </Tabs>
+            {user.role === 'admin' ? (
+              <Tabs.Panel value="permissions" pt="md" h="80vh">
+                <Stack gap="md" justify='center' align='center' h={'100%'}>
+                  <Text c="dimmed" size='sm'>Tài khoản đã có tất cả các quyền.</Text>
+                </Stack>
+              </Tabs.Panel>
+            ) : user.role === 'staff' && canEditUsers ? (
+              <Tabs.Panel value="permissions" pt="md">
+                <Paper withBorder p="md" radius="md">
+                  <Table>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Module</Table.Th>
+                        <Table.Th>Quyền Xem</Table.Th>
+                        <Table.Th>Quyền Sửa</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {modules.filter(m => !ADMIN_ONLY_MODULES.includes(m.code)).map(module => (
+                        <Table.Tr key={module.id}>
+                          <Table.Td>
+                            {module.name}
+                            {ACTION_ONLY_MODULES.includes(module.code) && <Text size="xs" c="dimmed">Quyền xem đã bao gồm quyền thực hiện</Text>}
+                          </Table.Td>
+                          <Table.Td>
+                            <Checkbox
+                              checked={permissions[module.id]?.canView || false}
+                              onChange={(e) => handlePermissionChange(module.id, 'canView', e.currentTarget.checked)}
+                            />
+                          </Table.Td>
+                          <Table.Td>
+                            <Checkbox
+                              checked={permissions[module.id]?.canEdit || false}
+                              onChange={(e) => handlePermissionChange(module.id, 'canEdit', e.currentTarget.checked)}
+                              // Vô hiệu hóa nếu không có quyền xem HOẶC là module hành động
+                              disabled={!permissions[module.id]?.canView || ACTION_ONLY_MODULES.includes(module.code)}
+                            />
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                  <Group justify="flex-end" mt="xl">
+                    <Button onClick={handleSaveChanges} loading={saving}>
+                      Lưu thay đổi
+                    </Button>
+                  </Group>
+                </Paper>
+              </Tabs.Panel>
+            ) : null}
+          </Tabs>
+        </Paper>
+      </Flex>
     </Container>
   );
 }

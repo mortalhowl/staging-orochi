@@ -65,11 +65,11 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
     const totalQuantity = trans.transaction_items.reduce((sum, item) => sum + item.quantity, 0);
     return (
       <Table.Tr key={trans.id}>
-        <Table.Td>{trans.events?.title || 'N/A'}</Table.Td>
+        <Table.Td maw={110}>{trans.events?.title || 'N/A'}</Table.Td>
         <Table.Td>
           <Group gap="xs" wrap="nowrap">
             <Tooltip label={trans.id}>
-              <Text truncate maw={200}>{trans.id}</Text>
+              <Text truncate maw={160}>{trans.id}</Text>
             </Tooltip>
             <Tooltip label="Sao chép Mã ĐH">
               <ActionIcon variant="transparent" color="gray" onClick={(e) => { e.stopPropagation(); clipboard.copy(trans.id); }}>
@@ -93,7 +93,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
 
   return (
     <ScrollArea>
-      <Table striped highlightOnHover withTableBorder miw={800}>
+      <Table striped highlightOnHover withTableBorder miw={770}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Sự kiện</Table.Th>
@@ -105,7 +105,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={6} align="center">Người dùng này chưa có giao dịch nào.</Table.Td></Table.Tr>}
+          {rows.length > 0 ? rows : <Table.Tr  h="75vh"><Table.Td colSpan={6} align="center" h="100%">Người dùng này chưa có giao dịch nào.</Table.Td></Table.Tr>}
         </Table.Tbody>
       </Table>
     </ScrollArea>

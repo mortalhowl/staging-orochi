@@ -39,6 +39,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
               <Box w={150}>
                 <Text truncate maw={150} size="sm" fw={500}>{user.full_name}</Text>
                 <Text truncate maw={150} size="xs" c="dimmed">{user.email}</Text>
+                <Text truncate maw={150} size="xs" c="dimmed">{user.phone || 'N/A'}</Text>
               </Box>
             </Group>
           </Tooltip>
@@ -88,7 +89,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={3} align="center">Không có người dùng nào.</Table.Td></Table.Tr>}
+            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={3} align="center" >Không có người dùng nào.</Table.Td></Table.Tr>}
           </Table.Tbody>
         </Table>
       </ScrollArea>
