@@ -62,7 +62,7 @@ export function AdminLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
-  const { userProfile, permissions, isLoading, checkSession, logout } = useAuthStore();
+  const { userProfile, permissions, isLoading, initListener, logout } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -71,9 +71,9 @@ export function AdminLayout() {
     // có nghĩa là người dùng vừa đăng nhập hoặc F5.
     // Chúng ta cần yêu cầu store tải lại dữ liệu.
     if (session?.user && (!userProfile || userProfile.id !== session.user.id)) {
-      checkSession();
+      initListener();
     }
-  }, [session, userProfile, checkSession]);
+  }, [session, userProfile, initListener]);
   const handleLogout = async () => {
     await logout();
     navigate('/admin/login');

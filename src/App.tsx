@@ -45,7 +45,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 export function App() {
 
   useEffect(() => {
-    useAuthStore.getState().checkSession();
+    useAuthStore.getState().initListener();
   }, []);
 
   return (
