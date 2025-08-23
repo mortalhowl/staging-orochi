@@ -1,5 +1,5 @@
 // src/layouts/AdminLayout.tsx
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   AppShell,
   Burger,
@@ -62,36 +62,17 @@ export function AdminLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
-  const { userProfile, permissions, isLoading, initListener, logout } = useAuthStore();
+  // Lấy state và actions từ "kho"
+  const { userProfile, permissions, isLoading, logout } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  useEffect(() => {
-    // Nếu có session nhưng profile trong store không khớp (hoặc chưa có),
-    // có nghĩa là người dùng vừa đăng nhập hoặc F5.
-    // Chúng ta cần yêu cầu store tải lại dữ liệu.
-    if (session?.user && (!userProfile || userProfile.id !== session.user.id)) {
-      initListener();
-    }
-  }, [session, userProfile, initListener]);
   const handleLogout = async () => {
     await logout();
     navigate('/admin/login');
   };
-  // const handleLogout = async () => {
-  //   const { error } = await supabase.auth.signOut();
-  //   if (error) {
-  //     notifications.show({
-  //       title: 'Lỗi đăng xuất',
-  //       message: error.message,
-  //       color: 'red',
-  //     });
-  //   } else {
-  //     navigate('/admin/login');
-  //   }
-  // };
 
-  const toggleSidebar = () => {
+    const toggleSidebar = () => {
     setIsTransitioning(true);
     setSidebarOpened((o) => !o);
 
@@ -103,31 +84,15 @@ export function AdminLayout() {
     }, 200);
   };
 
-  useEffect(() => {
-    return () => {
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const hasPermission = (moduleCode: string) => {
-    // Admin luôn có quyền
-    if (userProfile?.role === 'admin') {
-      return true;
-    }
-    // Staff không bao giờ có quyền vào Dashboard và Settings
+    if (userProfile?.role === 'admin') return true;
     if (userProfile?.role === 'staff') {
-      if (moduleCode === 'dashboard' || moduleCode === 'settings') {
-        return false;
-      }
-      // Đối với các module khác, kiểm tra quyền xem
       return permissions.some(p => p.moduleCode === moduleCode && p.canView);
     }
     return false;
   };
 
-  const userAvatar = session.user?.user_metadata?.avatar_url;
+  const userAvatar = userProfile?.avatar_url || session.user?.user_metadata?.avatar_url;
 
   // Nav menu content (dùng chung cho Drawer và Navbar)
   const navMenu = (
