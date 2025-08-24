@@ -12,11 +12,24 @@ export function PublicLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   
   // Sử dụng auth store thay vì local state
-  const { session, userProfile, isInitialized, logout } = useAuthStore();
+  const { session, userProfile, isInitialized, authError, logout, refreshAuth, clearAuthError } = useAuthStore();
+
+  // Hiển thị auth error nếu có
+  useEffect(() => {
+    if (authError) {
+      notifications.show({
+        title: 'Thông báo',
+        message: authError,
+        color: 'yellow',
+        autoClose: 5000,
+      });
+      clearAuthError();
+    }
+  }, [authError, clearAuthError]);
 
   // Xử lý password recovery navigation
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/update-password');
       }
@@ -27,15 +40,16 @@ export function PublicLayout() {
 
   const handleGoogleLogin = async () => {
     try {
-      await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        // Bỏ redirectTo để Supabase dùng URL đã cấu hình, giúp URL sạch hơn
       });
-    } catch (error) {
+      
+      if (error) throw error;
+    } catch (error: any) {
       console.error('Login error:', error);
       notifications.show({
         title: 'Lỗi Đăng nhập',
-        message: 'Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.',
+        message: error.message || 'Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.',
         color: 'red',
       });
     }
@@ -45,11 +59,34 @@ export function PublicLayout() {
     try {
       await logout();
       navigate('/');
-    } catch (error) {
+      notifications.show({
+        title: 'Thành công',
+        message: 'Đã đăng xuất thành công',
+        color: 'green',
+      });
+    } catch (error: any) {
       console.error('Logout error:', error);
       notifications.show({
         title: 'Lỗi',
-        message: 'Có lỗi xảy ra khi đăng xuất.',
+        message: error.message || 'Có lỗi xảy ra khi đăng xuất.',
+        color: 'red',
+      });
+    }
+  };
+
+  // Hàm retry khi có lỗi kết nối
+  const handleRetry = async () => {
+    try {
+      await refreshAuth();
+      notifications.show({
+        title: 'Thành công',
+        message: 'Đã làm mới kết nối',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Lỗi',
+        message: 'Không thể kết nối. Vui lòng thử lại sau.',
         color: 'red',
       });
     }
@@ -119,6 +156,16 @@ export function PublicLayout() {
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
+              ) : session && !userProfile ? (
+                // Hiển thị khi có session nhưng không load được userProfile
+                <Button 
+                  variant="outline" 
+                  size="xs" 
+                  onClick={handleRetry}
+                  color="yellow"
+                >
+                  Thử lại
+                </Button>
               ) : (
                 <Button onClick={handleGoogleLogin} c="#fff" bg="#008a87">
                   Đăng nhập

@@ -1,5 +1,5 @@
 // src/layouts/AdminLayout.tsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   AppShell,
   Burger,
@@ -16,6 +16,7 @@ import {
   Title,
   Center,
   Loader,
+  Button,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import {
@@ -35,8 +36,7 @@ import {
   IconTag,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
-// import { supabase } from '../services/supabaseClient';
-// import { notifications } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import type { Session } from '@supabase/supabase-js';
 import { useAuthStore } from '../store/authStore';
 
@@ -62,14 +62,59 @@ export function AdminLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
-  // Lấy state và actions từ "kho" - thêm isInitialized
-  const { userProfile, permissions, isLoading, isInitialized, logout } = useAuthStore();
+  // Lấy state và actions từ "kho" - thêm refreshAuth và authError
+  const { userProfile, permissions, isLoading, isInitialized, authError, logout, refreshAuth, clearAuthError } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  // Hiển thị auth error nếu có
+  useEffect(() => {
+    if (authError) {
+      notifications.show({
+        title: 'Thông báo',
+        message: authError,
+        color: 'yellow',
+        autoClose: 5000,
+      });
+      clearAuthError();
+    }
+  }, [authError, clearAuthError]);
+
   const handleLogout = async () => {
-    await logout();
-    navigate('/admin/login');
+    try {
+      await logout();
+      navigate('/admin/login');
+      notifications.show({
+        title: 'Thành công',
+        message: 'Đã đăng xuất thành công',
+        color: 'green',
+      });
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      notifications.show({
+        title: 'Lỗi',
+        message: error.message || 'Có lỗi xảy ra khi đăng xuất.',
+        color: 'red',
+      });
+    }
+  };
+
+  // Hàm retry khi có lỗi kết nối
+  const handleRetry = async () => {
+    try {
+      await refreshAuth();
+      notifications.show({
+        title: 'Thành công',
+        message: 'Đã làm mới kết nối',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Lỗi',
+        message: 'Không thể kết nối. Vui lòng thử lại sau.',
+        color: 'red',
+      });
+    }
   };
 
   const toggleSidebar = () => {
@@ -152,10 +197,25 @@ export function AdminLayout() {
         <AppShell.Header>
           <Group h="100%" px="md" justify="space-between">
             <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
+            {/* Hiển thị retry button nếu có authError */}
+            {authError && (
+              <Button variant="light" size="xs" onClick={handleRetry} color="yellow">
+                Thử lại
+              </Button>
+            )}
           </Group>
         </AppShell.Header>
         <AppShell.Main>
-          <Center h="calc(100vh - 60px)"><Loader /></Center>
+          <Center h="calc(100vh - 60px)">
+            <div style={{ textAlign: 'center' }}>
+              <Loader />
+              {authError && (
+                <Text size="sm" c="dimmed" mt="md">
+                  Đang kết nối lại...
+                </Text>
+              )}
+            </div>
+          </Center>
         </AppShell.Main>
       </AppShell>
     );
@@ -226,6 +286,19 @@ export function AdminLayout() {
               >
                 Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
               </Menu.Item>
+              {/* Thêm option refresh khi có vấn đề kết nối */}
+              {authError && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Item
+                    leftSection={<IconSettings size={14} />}
+                    onClick={handleRetry}
+                    color="yellow"
+                  >
+                    Làm mới kết nối
+                  </Menu.Item>
+                </>
+              )}
               <Menu.Divider />
               <Menu.Item
                 color="red"
