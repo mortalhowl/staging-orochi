@@ -129,24 +129,30 @@ export function UserDetailPage() {
   const handleAdminAction = async (action: 'send_reset_password' | 'update_password' | 'disable_user' | 'enable_user' | 'delete_user') => {
     let confirmationText = '';
     switch (action) {
-      case 'send_reset_password': confirmationText = 'gửi link đổi mật khẩu cho người dùng này'; break;
-      case 'disable_user': confirmationText = 'vô hiệu hóa tài khoản này'; break;
-      case 'delete_user': confirmationText = 'XÓA vĩnh viễn tài khoản này'; break;
-      default: break;
+        case 'send_reset_password': confirmationText = 'gửi link đổi mật khẩu cho người dùng này'; break;
+        case 'disable_user': confirmationText = 'vô hiệu hóa tài khoản này'; break;
+        case 'enable_user': confirmationText = 'kích hoạt lại tài khoản này'; break;
+        case 'delete_user': confirmationText = 'xóa tài khoản này? Nếu người dùng đã có lịch sử giao dịch, tài khoản sẽ được vô hiệu hóa thay vì xóa vĩnh viễn.'; break;
+        default: break;
     }
 
     const confirmAction = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('user-admin-actions', {
-          body: { action, payload: { userId, newPassword } },
-        });
-        if (error) throw new Error(data?.error || error.message);
-        notifications.show({ title: 'Thành công', message: data.message || `Thực hiện hành động thành công.`, color: 'green' });
-        if (action === 'delete_user') navigate('/admin/users');
-        if (action === 'disable_user' || action === 'enable_user') setRefreshKey(k => k + 1); // Refresh lại trang
-      } catch (err: any) {
-        notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
-      }
+        try {
+            const { data, error } = await supabase.functions.invoke('user-admin-actions', {
+                body: { action, payload: { userId, newPassword } },
+            });
+            if (error) throw new Error(data?.error || error.message);
+            // Thông báo thành công sẽ hiển thị chính xác thông điệp từ backend
+            notifications.show({ title: 'Thành công', message: data.message, color: 'green' });
+            
+            if (action === 'delete_user' && data.message.includes('xóa')) {
+                navigate('/admin/users');
+            } else {
+                setRefreshKey(k => k + 1); // Refresh lại trang để cập nhật trạng thái
+            }
+        } catch (err: any) {
+            notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
+        }
     };
 
     if (action === 'update_password') {
@@ -156,7 +162,13 @@ export function UserDetailPage() {
       }
       modals.openConfirmModal({ title: 'Xác nhận đổi mật khẩu', children: <Text size="sm">Bạn có chắc muốn đặt lại mật khẩu cho người dùng này?</Text>, onConfirm: confirmAction, labels: { confirm: 'Xác nhận', cancel: 'Hủy' } });
     } else {
-      modals.openConfirmModal({ title: `Xác nhận hành động`, children: <Text size="sm">Bạn có chắc muốn {confirmationText}?</Text>, onConfirm: confirmAction, labels: { confirm: 'Xác nhận', cancel: 'Hủy' }, confirmProps: { color: action === 'delete_user' ? 'red' : 'blue' } });
+        modals.openConfirmModal({ 
+            title: `Xác nhận hành động`, 
+            children: <Text size="sm">Bạn có chắc muốn {confirmationText}?</Text>, 
+            onConfirm: confirmAction, 
+            labels: { confirm: 'Xác nhận', cancel: 'Hủy' }, 
+            confirmProps: { color: action === 'delete_user' ? 'red' : 'blue' } 
+        });
     }
   };
 

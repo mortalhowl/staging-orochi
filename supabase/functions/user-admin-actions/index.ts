@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
         responseMessage = 'Đã gửi link đổi mật khẩu.';
         break;
-        
+
       case 'update_password':
         if (!newPassword) throw new Error('New password is required.');
         await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword });
@@ -90,9 +90,31 @@ Deno.serve(async (req) => {
         responseMessage = 'Đã kích hoạt lại tài khoản.';
         break;
       case 'delete_user':
-        await supabaseAdmin.from('users').delete().eq('id', userId);
-        await supabaseAdmin.auth.admin.deleteUser(userId);
-        responseMessage = 'Đã xóa tài khoản thành công.';
+        console.log(`[LOG] Starting 'delete_user' action for user ID: ${userId}`);
+
+        // BƯỚC KIỂM TRA MỚI: Đếm số lượng giao dịch của người dùng
+        const { count, error: countError } = await supabaseAdmin
+          .from('transactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId);
+
+        if (countError) throw countError;
+
+        if (count > 0) {
+          // Nếu đã có giao dịch, chỉ vô hiệu hóa
+          console.log(`[LOG] User has ${count} transactions. Disabling instead of deleting.`);
+          const { error: disableError } = await supabaseAdmin.from('users').update({ status: 'disabled' }).eq('id', userId);
+          if (disableError) throw disableError;
+          responseMessage = 'Người dùng đã có lịch sử giao dịch. Tài khoản đã được vô hiệu hóa thay vì xóa.';
+        } else {
+          // Nếu chưa có giao dịch, xóa vĩnh viễn
+          console.log(`[LOG] User has no transactions. Deleting permanently.`);
+          await supabaseAdmin.from('users').delete().eq('id', userId);
+          const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+          if (deleteError) throw deleteError;
+          responseMessage = 'Đã xóa tài khoản thành công.';
+        }
+        console.log(`[LOG] 'delete_user' action successful.`);
         break;
       default:
         throw new Error('Invalid action.');

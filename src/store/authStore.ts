@@ -59,7 +59,7 @@ const fetchUserSessionData = async (session: Session | null) => {
   } catch (error) {
     console.error("Auth Store Error:", error);
     await supabase.auth.signOut();
-    return { session: null, userProfile: null, permissions: [], isLoading: false, authError: 'Đã có lỗi xảy ra khi lấy thông tin tài khoản.' };
+    return { session: null, userProfile: null, permissions: [], isLoading: false, authError: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.' }; // Trả về bị khóa cho nhanh
   }
 };
 
