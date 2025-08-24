@@ -1,45 +1,39 @@
+//src/store/authStore.ts
 import { create } from 'zustand';
 import { supabase } from '../services/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import type { Permission, UserProfile } from '../types';
+import type { Permission, UserProfile } from '../types'; 
 
 interface AuthState {
   session: Session | null;
   userProfile: UserProfile | null;
   permissions: Permission[];
   isLoading: boolean;
-  authError: string | null;
+  isInitialized: boolean; // Thêm flag này để track việc khởi tạo
   initListener: () => () => void;
   logout: () => Promise<void>;
   hasEditPermission: (moduleCode: string) => boolean;
-  clearAuthError: () => void;
 }
 
-// Hàm trợ giúp để lấy dữ liệu session
+// Hàm trợ giúp để lấy dữ liệu session, tránh lặp code
 const fetchUserSessionData = async (session: Session | null) => {
+  // Nếu không có session, trả về trạng thái đã đăng xuất
   if (!session) {
-    return { session: null, userProfile: null, permissions: [], isLoading: false };
+    return { session: null, userProfile: null, permissions: [], isLoading: false, isInitialized: true };
   }
+  
   try {
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('id', session.user.id)
       .single();
+    
     if (profileError) throw profileError;
 
-    // *** BƯỚC KIỂM TRA BẢO MẬT QUAN TRỌNG ***
-    // Nếu tài khoản bị vô hiệu hóa, tự động đăng xuất và trả về trạng thái rỗng.
     if (userProfile?.status === 'disabled') {
       await supabase.auth.signOut();
-      // Trả về trạng thái lỗi
-      return {
-        session: null,
-        userProfile: null,
-        permissions: [],
-        isLoading: false,
-        authError: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.'
-      };
+      return { session: null, userProfile: null, permissions: [], isLoading: false, isInitialized: true };
     }
 
     let userPermissions: Permission[] = [];
@@ -48,18 +42,21 @@ const fetchUserSessionData = async (session: Session | null) => {
         .from('permissions')
         .select('*, modules(code)')
         .eq('user_id', session.user.id);
+      
       if (permissionsError) throw permissionsError;
+      
       userPermissions = (permissionsData || []).map((p: any) => ({
         moduleCode: p.modules.code,
         canView: p.can_view,
         canEdit: p.can_edit,
       }));
     }
-    return { session, userProfile, permissions: userPermissions, isLoading: false };
+    
+    return { session, userProfile, permissions: userPermissions, isLoading: false, isInitialized: true };
   } catch (error) {
     console.error("Auth Store Error:", error);
     await supabase.auth.signOut();
-    return { session: null, userProfile: null, permissions: [], isLoading: false, authError: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.' }; // Trả về bị khóa cho nhanh
+    return { session: null, userProfile: null, permissions: [], isLoading: false, isInitialized: true };
   }
 };
 
@@ -68,23 +65,63 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userProfile: null,
   permissions: [],
   isLoading: true,
-  authError: null,
+  isInitialized: false,
 
+  // Hàm này sẽ thiết lập listener để tự động cập nhật state khi có thay đổi
   initListener: () => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const sessionData = await fetchUserSessionData(session);
-      set(sessionData);
+    let hasInitialLoad = false;
+    
+    // Lấy session hiện tại ngay lập tức
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        const sessionData = await fetchUserSessionData(session);
+        set({ ...sessionData, isInitialized: true });
+        hasInitialLoad = true;
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        set({ 
+          session: null, 
+          userProfile: null, 
+          permissions: [], 
+          isLoading: false, 
+          isInitialized: true 
+        });
+        hasInitialLoad = true;
+      }
+    };
+
+    // Khởi tạo ngay lập tức
+    initializeAuth();
+
+    // Thiết lập listener cho các thay đổi sau này
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Bỏ qua lần đầu tiên nếu đã khởi tạo rồi
+      if (!hasInitialLoad) {
+        hasInitialLoad = true;
+        return;
+      }
+      
+      // Chỉ xử lý các thay đổi thực sự
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        const sessionData = await fetchUserSessionData(session);
+        set(sessionData);
+      }
     });
+
+    // Trả về hàm để dọn dẹp listener
     return () => {
       subscription.unsubscribe();
     };
   },
 
   logout: async () => {
+    set({ isLoading: true }); // Set loading khi đang logout
     await supabase.auth.signOut();
+    // onAuthStateChange sẽ tự động xử lý việc reset state
   },
-
-  clearAuthError: () => set({ authError: null }),
 
   hasEditPermission: (moduleCode: string) => {
     const { userProfile, permissions } = get();

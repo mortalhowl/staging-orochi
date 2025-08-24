@@ -62,8 +62,8 @@ export function AdminLayout() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
-  // Lấy state và actions từ "kho"
-  const { userProfile, permissions, isLoading, logout } = useAuthStore();
+  // Lấy state và actions từ "kho" - thêm isInitialized
+  const { userProfile, permissions, isLoading, isInitialized, logout } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -72,7 +72,7 @@ export function AdminLayout() {
     navigate('/admin/login');
   };
 
-    const toggleSidebar = () => {
+  const toggleSidebar = () => {
     setIsTransitioning(true);
     setSidebarOpened((o) => !o);
 
@@ -139,14 +139,14 @@ export function AdminLayout() {
                 borderRadius: rem(4),
               },
             })}
-
           />
         )
       )}
     </>
   );
 
-  if (isLoading || !userProfile) {
+  // Chỉ hiển thị loader khi chưa initialized HOẶC đang loading và chưa có userProfile
+  if (!isInitialized || (isLoading && !userProfile)) {
     return (
       <AppShell header={{ height: 60 }} padding="md">
         <AppShell.Header>
@@ -249,7 +249,6 @@ export function AdminLayout() {
             overflowX: 'hidden',
           }}
         >
-
           {navMenu}
         </AppShell.Navbar>
       )}
