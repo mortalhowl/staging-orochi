@@ -10,8 +10,10 @@ interface AuthState {
   permissions: Permission[];
   isLoading: boolean;
   isInitialized: boolean; // Thêm flag này để track việc khởi tạo
+  authError: string | null; // Thêm authError
   initListener: () => () => void;
   logout: () => Promise<void>;
+  clearAuthError: () => void; // Thêm hàm clear error
   hasEditPermission: (moduleCode: string) => boolean;
 }
 
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   permissions: [],
   isLoading: true,
   isInitialized: false,
+  authError: null, // Khởi tạo authError
 
   // Hàm này sẽ thiết lập listener để tự động cập nhật state khi có thay đổi
   initListener: () => {
@@ -121,6 +124,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true }); // Set loading khi đang logout
     await supabase.auth.signOut();
     // onAuthStateChange sẽ tự động xử lý việc reset state
+  },
+
+  clearAuthError: () => {
+    set({ authError: null });
   },
 
   hasEditPermission: (moduleCode: string) => {

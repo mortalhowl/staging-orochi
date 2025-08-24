@@ -1,75 +1,58 @@
 import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image, useMantineColorScheme, } from '@mantine/core';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import type { Session, User } from '@supabase/supabase-js';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { IconLogout, IconTicket, IconSun, IconMoon } from '@tabler/icons-react';
-import type { UserProfile } from '../types';
 import { Footer } from '../components/public/Footer';
 import { useAuthStore } from '../store/authStore'; // Import store
 import { notifications } from '@mantine/notifications';
 
 export function PublicLayout() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const { authError, clearAuthError } = useAuthStore();
+  
+  // Sử dụng auth store thay vì local state
+  const { session, userProfile, isInitialized, logout } = useAuthStore();
 
+  // Xử lý password recovery navigation
   useEffect(() => {
-    if (authError) {
-      notifications.show({
-        title: 'Lỗi Đăng nhập',
-        message: authError,
-        color: 'red',
-      });
-      clearAuthError(); // Xóa lỗi sau khi đã hiển thị
-    }
-  }, [authError, clearAuthError]);
-
-  useEffect(() => {
-    const fetchProfile = async (user: User | null) => {
-      if (!user) {
-        setUserProfile(null);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (!error) setUserProfile(data);
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      fetchProfile(session?.user ?? null);
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/update-password');
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      fetchProfile(session?.user ?? null);
-    });
-
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      // Bỏ redirectTo để Supabase dùng URL đã cấu hình, giúp URL sạch hơn
-    });
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        // Bỏ redirectTo để Supabase dùng URL đã cấu hình, giúp URL sạch hơn
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      notifications.show({
+        title: 'Lỗi Đăng nhập',
+        message: 'Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.',
+        color: 'red',
+      });
+    }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUserProfile(null);
-    navigate('/');
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      notifications.show({
+        title: 'Lỗi',
+        message: 'Có lỗi xảy ra khi đăng xuất.',
+        color: 'red',
+      });
+    }
   };
 
   return (
@@ -93,45 +76,55 @@ export function PublicLayout() {
               </Text>
             </Group>
           </Link>
-          {session && userProfile ? (
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <Avatar src={userProfile.avatar_url} radius="xl" style={{ cursor: 'pointer' }} />
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>
-                  <Text fw={500} truncate>{userProfile.full_name}</Text>
-                  <Text size="xs" c="dimmed" truncate>{userProfile.email}</Text>
-                </Menu.Label>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconTicket style={{ width: rem(14), height: rem(14) }} />}
-                  onClick={() => navigate('/my-tickets')}
-                >
-                  Vé của tôi
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={
-                    colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
-                  }
-                  onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
-                >
-                  Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconLogout style={{ width: rem(14), height: rem(14) }} />}
-                  onClick={handleLogout}
-                >
-                  Đăng xuất
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          ) : (
-            <Button onClick={handleGoogleLogin} c="#fff" bg="#008a87" >
-              Đăng nhập
-            </Button>
+          
+          {/* Chỉ hiển thị UI khi đã initialized */}
+          {isInitialized && (
+            <>
+              {session && userProfile ? (
+                <Menu shadow="md" width={200}>
+                  <Menu.Target>
+                    <Avatar 
+                      src={userProfile.avatar_url || session.user?.user_metadata?.avatar_url} 
+                      radius="xl" 
+                      style={{ cursor: 'pointer' }} 
+                    />
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>
+                      <Text fw={500} truncate>{userProfile.full_name || 'Người dùng'}</Text>
+                      <Text size="xs" c="dimmed" truncate>{userProfile.email || session.user.email}</Text>
+                    </Menu.Label>
+                    <Menu.Divider />
+                    <Menu.Item
+                      leftSection={<IconTicket style={{ width: rem(14), height: rem(14) }} />}
+                      onClick={() => navigate('/my-tickets')}
+                    >
+                      Vé của tôi
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={
+                        colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
+                      }
+                      onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
+                    >
+                      Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconLogout style={{ width: rem(14), height: rem(14) }} />}
+                      onClick={handleLogout}
+                    >
+                      Đăng xuất
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              ) : (
+                <Button onClick={handleGoogleLogin} c="#fff" bg="#008a87">
+                  Đăng nhập
+                </Button>
+              )}
+            </>
           )}
         </Group>
       </AppShell.Header>
