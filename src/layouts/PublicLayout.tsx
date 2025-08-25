@@ -1,135 +1,70 @@
-import { AppShell, Button, Group, Text, Menu, Avatar, rem, Image, useMantineColorScheme, } from '@mantine/core';
+import { AppShell, Burger, Button, Group, Text, Menu, Avatar, rem, Container } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { useEffect } from 'react';
-import { IconLogout, IconTicket, IconSun, IconMoon } from '@tabler/icons-react';
+import { IconLogout, IconTicket, IconBrandGoogle } from '@tabler/icons-react';
 import { Footer } from '../components/public/Footer';
-import { useAuthStore } from '../store/authStore'; // Import store
-import { notifications } from '@mantine/notifications';
+import { useAuthStore } from '../store/authStore';
 
 export function PublicLayout() {
+  const [opened, { toggle }] = useDisclosure();
   const navigate = useNavigate();
-  const { colorScheme, setColorScheme } = useMantineColorScheme();
   
-  // Sử dụng auth store thay vì local state
-  const { session, userProfile, isInitialized, authError, logout, refreshAuth, clearAuthError } = useAuthStore();
+  // Lấy state và actions từ "kho"
+  const { session, userProfile, logout, checkSession } = useAuthStore();
 
-  // Hiển thị auth error nếu có
+  // Lắng nghe sự thay đổi session từ Supabase để cập nhật lại profile
   useEffect(() => {
-    if (authError) {
-      notifications.show({
-        title: 'Thông báo',
-        message: authError,
-        color: 'yellow',
-        autoClose: 5000,
-      });
-      clearAuthError();
-    }
-  }, [authError, clearAuthError]);
-
-  // Xử lý password recovery navigation
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, _session) => {
+      // Khi có thay đổi, yêu cầu store kiểm tra lại
+      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+        checkSession();
+      }
+      if (_event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem('isRecoveringPassword', 'true');
         navigate('/update-password');
       }
     });
-
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [checkSession, navigate]);
+
 
   const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-      });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Login error:', error);
-      notifications.show({
-        title: 'Lỗi Đăng nhập',
-        message: error.message || 'Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.',
-        color: 'red',
-      });
-    }
+    await supabase.auth.signInWithOAuth({ provider: 'google' });
   };
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-      notifications.show({
-        title: 'Thành công',
-        message: 'Đã đăng xuất thành công',
-        color: 'green',
-      });
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      notifications.show({
-        title: 'Lỗi',
-        message: error.message || 'Có lỗi xảy ra khi đăng xuất.',
-        color: 'red',
-      });
-    }
+    await logout();
+    navigate('/');
   };
 
-  // Hàm retry khi có lỗi kết nối
-  const handleRetry = async () => {
-    try {
-      await refreshAuth();
-      notifications.show({
-        title: 'Thành công',
-        message: 'Đã làm mới kết nối',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Lỗi',
-        message: 'Không thể kết nối. Vui lòng thử lại sau.',
-        color: 'red',
-      });
-    }
-  };
+  const userAvatar = userProfile?.avatar_url || session?.user?.user_metadata?.avatar_url;
 
   return (
-    <AppShell header={{ height: 60 }} padding="md">
+    <AppShell
+      header={{ height: 60 }}
+      padding={0}
+    >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Group>
-              <Image src="/logo.png" alt="Orochi Logo" style={{ width: '34px' }} />
-              <Text
-                fw={900} // Đậm nhất
-                style={{
-                  fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-                  color: '#008a87',
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
-                }}
-                c="#008a87"
-              >
-                Orochi
-              </Text>
-            </Group>
-          </Link>
-          
-          {/* Chỉ hiển thị UI khi đã initialized */}
-          {isInitialized && (
-            <>
+        <Container size="lg">
+            <Group h="100%" justify="space-between">
+              <Group>
+                <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+                <Text fw={700} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                  OROCHI TICKET
+                </Text>
+              </Group>
+
               {session && userProfile ? (
                 <Menu shadow="md" width={200}>
                   <Menu.Target>
-                    <Avatar 
-                      src={userProfile.avatar_url || session.user?.user_metadata?.avatar_url} 
-                      radius="xl" 
-                      style={{ cursor: 'pointer' }} 
-                    />
+                    <Avatar src={userAvatar} radius="xl" style={{ cursor: 'pointer' }} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Label>
-                      <Text fw={500} truncate>{userProfile.full_name || 'Người dùng'}</Text>
-                      <Text size="xs" c="dimmed" truncate>{userProfile.email || session.user.email}</Text>
+                      <Text fw={500} truncate>{userProfile.full_name}</Text>
+                      <Text size="xs" c="dimmed" truncate>{userProfile.email}</Text>
                     </Menu.Label>
                     <Menu.Divider />
                     <Menu.Item
@@ -137,14 +72,6 @@ export function PublicLayout() {
                       onClick={() => navigate('/my-tickets')}
                     >
                       Vé của tôi
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={
-                        colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
-                      }
-                      onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
-                    >
-                      Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
                     </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
@@ -156,27 +83,20 @@ export function PublicLayout() {
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
-              ) : session && !userProfile ? (
-                // Hiển thị khi có session nhưng không load được userProfile
-                <Button 
-                  variant="outline" 
-                  size="xs" 
-                  onClick={handleRetry}
-                  color="yellow"
-                >
-                  Thử lại
-                </Button>
               ) : (
-                <Button onClick={handleGoogleLogin} c="#fff" bg="#008a87">
+                <Button onClick={handleGoogleLogin} leftSection={<IconBrandGoogle size={18} />} variant="default">
                   Đăng nhập
                 </Button>
               )}
-            </>
-          )}
-        </Group>
+            </Group>
+        </Container>
       </AppShell.Header>
 
-      <AppShell.Main pt={60} px="0px">
+      <AppShell.Navbar p="md">
+        <Link to="/">Trang chủ</Link>
+      </AppShell.Navbar>
+
+      <AppShell.Main>
         <Outlet />
       </AppShell.Main>
 

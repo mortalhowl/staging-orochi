@@ -1,58 +1,30 @@
-// src/layouts/AdminLayout.tsx
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  AppShell,
-  Burger,
-  Group,
-  NavLink,
-  Menu,
-  Avatar,
-  Text,
-  rem,
-  useMantineColorScheme,
-  Transition,
-  Drawer,
-  Image,
-  Title,
-  Center,
-  Loader,
-  Button,
+  AppShell, Burger, Group, NavLink, Menu, Avatar, Text,
+  useMantineColorScheme, Title, Drawer, Center, Loader,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import {
-  IconHome2,
-  IconLogout,
-  IconTicket,
-  IconUserCircle,
-  IconSun,
-  IconMoon,
-  IconSettings,
-  IconBook,
-  IconGift,
-  IconTicketOff,
-  IconScan,
-  IconUsers,
-  IconTransactionDollar,
-  IconTag,
+  IconHome2, IconLogout, IconTicket, IconUserCircle, IconSun,
+  IconMoon, IconSettings, IconBook, IconShoppingCart, IconGift,
+  IconTicketOff, IconScan, IconUsers,
 } from '@tabler/icons-react';
 import { Outlet, useNavigate, useOutletContext, useLocation, Link } from 'react-router-dom';
-import { notifications } from '@mantine/notifications';
 import type { Session } from '@supabase/supabase-js';
 import { useAuthStore } from '../store/authStore';
 
 type OutletContextType = { session: Session };
 
 const navLinks = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: IconHome2, moduleCode: 'dashboard' },
-  { href: '/admin/events', label: 'Sự kiện', icon: IconTicket, moduleCode: 'events' },
-  { href: '/admin/articles', label: 'Bài viết', icon: IconBook, moduleCode: 'articles' },
-  { href: '/admin/transactions', label: 'Giao dịch', icon: IconTransactionDollar, moduleCode: 'transactions' },
-  { href: '/admin/invited-tickets', label: 'Vé mời', icon: IconGift, moduleCode: 'invited-tickets' },
-  { href: '/admin/tickets', label: 'Quản lý Vé', icon: IconTicketOff, moduleCode: 'tickets' },
-  { href: '/admin/check-in', label: 'Check-in', icon: IconScan, moduleCode: 'check-in' },
-  { href: '/admin/vouchers', label: 'Voucher', icon: IconTag, moduleCode: 'vouchers' },
-  { href: '/admin/users', label: 'Người dùng', icon: IconUsers, moduleCode: 'users' },
-  { href: '/admin/settings', label: 'Cài đặt', icon: IconSettings, moduleCode: 'settings' },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: IconHome2, moduleCode: 'dashboard' },
+    { href: '/admin/events', label: 'Sự kiện', icon: IconTicket, moduleCode: 'events' },
+    { href: '/admin/articles', label: 'Bài viết', icon: IconBook, moduleCode: 'articles' },
+    { href: '/admin/transactions', label: 'Đơn hàng', icon: IconShoppingCart, moduleCode: 'transactions' },
+    { href: '/admin/invited-tickets', label: 'Vé mời', icon: IconGift, moduleCode: 'invited-tickets' },
+    { href: '/admin/tickets', label: 'Quản lý Vé', icon: IconTicketOff, moduleCode: 'tickets' },
+    { href: '/admin/check-in', label: 'Check-in', icon: IconScan, moduleCode: 'check-in' },
+    { href: '/admin/users', label: 'Người dùng', icon: IconUsers, moduleCode: 'users' },
+    { href: '/admin/settings', label: 'Cài đặt', icon: IconSettings, moduleCode: 'settings' },
 ];
 
 export function AdminLayout() {
@@ -60,74 +32,26 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const [sidebarOpened, setSidebarOpened] = useState(false);
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const transitionTimeoutRef = useRef<number | null>(null);
-  // Lấy state và actions từ "kho" - thêm refreshAuth và authError
-  const { userProfile, permissions, isLoading, isInitialized, authError, logout, refreshAuth, clearAuthError } = useAuthStore();
+  
+  // Lấy state và actions từ "kho"
+  const { userProfile, permissions, isLoading, logout, checkSession } = useAuthStore();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // Hiển thị auth error nếu có
+  // SỬA LỖI Ở ĐÂY: Thêm useEffect để đồng bộ hóa trạng thái
+  // Khi người dùng đăng nhập, session thay đổi, chúng ta cần yêu cầu store tải lại dữ liệu.
   useEffect(() => {
-    if (authError) {
-      notifications.show({
-        title: 'Thông báo',
-        message: authError,
-        color: 'yellow',
-        autoClose: 5000,
-      });
-      clearAuthError();
+    if (session?.user && (!userProfile || userProfile.id !== session.user.id)) {
+      checkSession();
     }
-  }, [authError, clearAuthError]);
+  }, [session, userProfile, checkSession]);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/admin/login');
-      notifications.show({
-        title: 'Thành công',
-        message: 'Đã đăng xuất thành công',
-        color: 'green',
-      });
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      notifications.show({
-        title: 'Lỗi',
-        message: error.message || 'Có lỗi xảy ra khi đăng xuất.',
-        color: 'red',
-      });
-    }
+    await logout(); // Sử dụng action logout từ store
+    navigate('/admin/login');
   };
 
-  // Hàm retry khi có lỗi kết nối
-  const handleRetry = async () => {
-    try {
-      await refreshAuth();
-      notifications.show({
-        title: 'Thành công',
-        message: 'Đã làm mới kết nối',
-        color: 'green',
-      });
-    } catch (error) {
-      notifications.show({
-        title: 'Lỗi',
-        message: 'Không thể kết nối. Vui lòng thử lại sau.',
-        color: 'red',
-      });
-    }
-  };
-
-  const toggleSidebar = () => {
-    setIsTransitioning(true);
-    setSidebarOpened((o) => !o);
-
-    if (transitionTimeoutRef.current) {
-      clearTimeout(transitionTimeoutRef.current);
-    }
-    transitionTimeoutRef.current = window.setTimeout(() => {
-      setIsTransitioning(false);
-    }, 200);
-  };
+  const toggleSidebar = () => setSidebarOpened((o) => !o);
 
   const hasPermission = (moduleCode: string) => {
     if (userProfile?.role === 'admin') return true;
@@ -139,172 +63,74 @@ export function AdminLayout() {
 
   const userAvatar = userProfile?.avatar_url || session.user?.user_metadata?.avatar_url;
 
-  // Nav menu content (dùng chung cho Drawer và Navbar)
+  // Nội dung Nav menu
   const navMenu = (
     <>
       {navLinks.map((link) =>
         hasPermission(link.moduleCode) && (
           <NavLink
             key={link.href}
-            href={link.href}
-            onClick={(e) => {
-              e.preventDefault();
-              navigate(link.href);
-              if (isMobile) setSidebarOpened(false); // đóng menu sau khi chọn
-            }}
-            label={
-              !isMobile && sidebarOpened ? (
-                <Transition
-                  mounted={sidebarOpened && !isTransitioning}
-                  transition="fade"
-                  duration={200}
-                  timingFunction="ease"
-                >
-                  {(styles) => <span style={styles}>{link.label}</span>}
-                </Transition>
-              ) : (
-                link.label
-              )
-            }
+            component={Link}
+            to={link.href}
+            label={isMobile || sidebarOpened ? link.label : ''}
             leftSection={<link.icon size={20} />}
             active={location.pathname.startsWith(link.href)}
-            styles={(theme, { active }) => ({
-              root: {
-                color: active ? '#fff' : '#008a87',
-                backgroundColor: active
-                  ? '#008a87'
-                  : colorScheme === 'dark'
-                    ? theme.colors.dark[7]
-                    : theme.white,
-                height: rem(36),
-                paddingLeft: sidebarOpened ? rem(8) : rem(10),
-                paddingRight: rem(10),
-                marginBottom: rem(4),
-                fontWeight: active ? 800 : 400,
-                borderRadius: rem(4),
-              },
-            })}
+            onClick={() => isMobile && setSidebarOpened(false)}
           />
         )
       )}
     </>
   );
 
-  // Chỉ hiển thị loader khi chưa initialized HOẶC đang loading và chưa có userProfile
-  if (!isInitialized || (isLoading && !userProfile)) {
+  // Hiển thị loader cho đến khi có dữ liệu quyền
+  if (isLoading || !userProfile) {
     return (
-      <AppShell header={{ height: 60 }} padding="md">
-        <AppShell.Header>
-          <Group h="100%" px="md" justify="space-between">
-            <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
-            {/* Hiển thị retry button nếu có authError */}
-            {authError && (
-              <Button variant="light" size="xs" onClick={handleRetry} color="yellow">
-                Thử lại
-              </Button>
-            )}
-          </Group>
-        </AppShell.Header>
-        <AppShell.Main>
-          <Center h="calc(100vh - 60px)">
-            <div style={{ textAlign: 'center' }}>
-              <Loader />
-              {authError && (
-                <Text size="sm" c="dimmed" mt="md">
-                  Đang kết nối lại...
-                </Text>
-              )}
-            </div>
-          </Center>
-        </AppShell.Main>
-      </AppShell>
+        <AppShell header={{ height: 60 }} padding="md">
+            <AppShell.Header>
+                <Group h="100%" px="md" justify="space-between">
+                    <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
+                </Group>
+            </AppShell.Header>
+            <AppShell.Main>
+                <Center h="calc(100vh - 60px)"><Loader /></Center>
+            </AppShell.Main>
+        </AppShell>
     );
   }
 
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={
-        !isMobile
-          ? { width: sidebarOpened ? 150 : 57, breakpoint: 0 }
-          : undefined
-      }
+      navbar={ !isMobile ? { width: sidebarOpened ? 200 : 60, breakpoint: 'sm' } : undefined }
       padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={sidebarOpened} onClick={toggleSidebar} size="sm" />
-            <Link to="/admin/home" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Group>
-                <Image src="/logo.png" alt="Orochi Logo" style={{ width: '30px' }} />
-                <Text
-                  fw={900} // Đậm nhất
-                  fz="xl" // Chữ to
-                  style={{
-                    fontFamily: 'BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-                    color: '#008a87',
-                    fontSize: '1.5rem',
-                    fontWeight: 700,
-                  }}
-                  c="#008a87"
-                >
-                  Orochi
-                </Text>
-              </Group>
-            </Link>
+            <Title order={4} c='#008a87' fw='bold'>Orochi</Title>
           </Group>
-
           <Menu shadow="md" width={200} trigger="click">
             <Menu.Target>
-              <Avatar
-                src={userAvatar}
-                alt="User Avatar"
-                radius="xl"
-                style={{ cursor: 'pointer' }}
-              />
+              <Avatar src={userAvatar} alt="User Avatar" radius="xl" style={{ cursor: 'pointer' }} />
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Label>
-                <Text fw={500}>{userProfile?.full_name || 'Người dùng'}</Text>
-                <Text size="xs" c="dimmed">
-                  {session.user.email}
-                </Text>
+                <Text fw={500} truncate>{userProfile?.full_name || 'Người dùng'}</Text>
+                <Text size="xs" c="dimmed" truncate>{session.user.email}</Text>
               </Menu.Label>
               <Menu.Divider />
-              <Menu.Item
-                leftSection={<IconUserCircle size={14} />}
-                onClick={() => navigate('/admin/profile')}
-              >
+              <Menu.Item leftSection={<IconUserCircle size={14} />} onClick={() => navigate('/admin/profile')}>
                 Thông tin cá nhân
               </Menu.Item>
               <Menu.Item
-                leftSection={
-                  colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />
-                }
+                leftSection={colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
                 onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
               >
                 Giao diện {colorScheme === 'dark' ? 'Sáng' : 'Tối'}
               </Menu.Item>
-              {/* Thêm option refresh khi có vấn đề kết nối */}
-              {authError && (
-                <>
-                  <Menu.Divider />
-                  <Menu.Item
-                    leftSection={<IconSettings size={14} />}
-                    onClick={handleRetry}
-                    color="yellow"
-                  >
-                    Làm mới kết nối
-                  </Menu.Item>
-                </>
-              )}
               <Menu.Divider />
-              <Menu.Item
-                color="red"
-                leftSection={<IconLogout size={14} />}
-                onClick={handleLogout}
-              >
+              <Menu.Item color="red" leftSection={<IconLogout size={14} />} onClick={handleLogout}>
                 Đăng xuất
               </Menu.Item>
             </Menu.Dropdown>
@@ -312,34 +138,19 @@ export function AdminLayout() {
         </Group>
       </AppShell.Header>
 
-      {/* Navbar cố định trên desktop */}
       {!isMobile && (
-        <AppShell.Navbar
-          px={sidebarOpened ? 'xs' : 8}
-          py="xs"
-          style={{
-            transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-            overflowX: 'hidden',
-          }}
-        >
+        <AppShell.Navbar p="xs">
           {navMenu}
         </AppShell.Navbar>
       )}
 
-      {/* Drawer trên mobile */}
       {isMobile && (
-        <Drawer
-          opened={sidebarOpened}
-          onClose={() => setSidebarOpened(false)}
-          title="Menu"
-          padding="md"
-          size="xs"
-        >
+        <Drawer opened={sidebarOpened} onClose={() => setSidebarOpened(false)} title="Menu" padding="md" size="xs">
           {navMenu}
         </Drawer>
       )}
 
-      <AppShell.Main px={0}>
+      <AppShell.Main>
         <Outlet />
       </AppShell.Main>
     </AppShell>

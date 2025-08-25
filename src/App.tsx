@@ -45,8 +45,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 export function App() {
 
   useEffect(() => {
-    const unsubscribe = useAuthStore.getState().initListener();
-    return () => unsubscribe(); // Dọn dẹp listener khi component unmount
+    useAuthStore.getState().checkSession();
   }, []);
 
   return (
