@@ -1,5 +1,5 @@
 // src/pages/admin/EmailConfigPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Paper, Title, TextInput, Button, Stack, NumberInput, Alert, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';

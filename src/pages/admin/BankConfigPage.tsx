@@ -1,11 +1,11 @@
 // src/pages/admin/BankConfigPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Paper, Title, TextInput, Button, Stack, Select } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { BANK_LIST } from '../../constants/banks';
-import { SettingsApi } from '../../services/api/settings'; // <-- 1. IMPORT SERVICE MỚI
+import { SettingsApi } from '../../services/api/settings';
 
 interface BankConfigForm {
   id?: string;
