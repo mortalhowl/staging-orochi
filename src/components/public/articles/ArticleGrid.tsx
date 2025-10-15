@@ -1,6 +1,6 @@
 import { Grid, Card, Image, Text, Title, Container } from '@mantine/core';
 import { Link } from 'react-router-dom';
-import type { Article } from '../../types';
+import type { Article } from '../../../types';
 
 interface ArticleGridProps {
   articles: Article[];

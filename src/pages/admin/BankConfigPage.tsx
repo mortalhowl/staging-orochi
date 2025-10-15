@@ -1,12 +1,14 @@
+// src/pages/admin/BankConfigPage.tsx
 import { useEffect, useState } from 'react';
 import { Paper, Title, TextInput, Button, Stack, Select } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { supabase } from '../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { BANK_LIST } from '../../constants/banks';
+import { SettingsApi } from '../../services/api/settings'; // <-- 1. IMPORT SERVICE MỚI
 
 interface BankConfigForm {
+  id?: string;
   bank_bin: string;
   bank_name: string;
   account_name: string;
@@ -16,7 +18,8 @@ interface BankConfigForm {
 
 export function BankConfigPage() {
   const [loading, { open: startLoading, close: endLoading }] = useDisclosure(false);
-  const [configId, setConfigId] = useState<string | null>(null);
+  // Không cần state 'configId' nữa, service sẽ tự xử lý
+  // const [configId, setConfigId] = useState<string | null>(null);
 
   const form = useForm<BankConfigForm>({
     initialValues: { bank_bin: '', bank_name: '', account_name: '', account_number: '', qr_template: 'compact' },
@@ -27,44 +30,27 @@ export function BankConfigPage() {
     },
   });
 
+  // <-- 2. TÁI CẤU TRÚC useEffect
   useEffect(() => {
     const fetchConfig = async () => {
-      const { data, error } = await supabase.from('bank_configs').select('*').limit(1);
-      if (error) {
-        console.error('Error fetching bank config:', error);
-        return;
-      }
-      if (data && data.length > 0) {
-        const config = data[0];
-        form.setValues(config);
-        setConfigId(config.id);
+      try {
+        const config = await SettingsApi.getBankConfig();
+        if (config) {
+          form.setValues(config);
+        }
+      } catch (error: any) {
+        notifications.show({ title: 'Lỗi', message: error.message, color: 'red' });
       }
     };
     fetchConfig();
-  }, []);
+  }, []); // Mảng rỗng đảm bảo useEffect chỉ chạy một lần
 
+  // <-- 3. TÁI CẤU TRÚC handleSubmit
   const handleSubmit = async (values: BankConfigForm) => {
     startLoading();
     try {
-      let error;
-      if (configId) {
-        // Nếu đã có ID, chỉ cần CẬP NHẬT
-        ({ error } = await supabase.from('bank_configs').update(values).eq('id', configId));
-      } else {
-        // Nếu chưa có ID, TẠO MỚI và lấy lại bản ghi vừa tạo để có ID
-        const { data, error: insertError } = await supabase
-          .from('bank_configs')
-          .insert([values])
-          .select()
-          .single(); // Lấy về bản ghi duy nhất vừa tạo
-
-        error = insertError;
-        if (data) {
-          // CẬP NHẬT STATE NGAY LẬP TỨC
-          setConfigId(data.id);
-        }
-      }
-      if (error) throw error;
+      // Logic `upsert` phức tạp giờ đây chỉ là một dòng gọi service
+      await SettingsApi.upsertBankConfig(values);
       notifications.show({ title: 'Thành công', message: 'Đã lưu cấu hình ngân hàng.', color: 'green' });
     } catch (err: any) {
       notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });

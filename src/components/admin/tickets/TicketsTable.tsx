@@ -16,7 +16,6 @@ import type { FullTicketDetails } from '../../../types';
 //   ticket_type_name: string;
 //   status: 'active' | 'disabled';
 // }
-
 interface TicketsTableProps {
   tickets: FullTicketDetails[];
   loading: boolean;

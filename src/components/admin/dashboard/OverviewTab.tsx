@@ -1,79 +1,22 @@
-import { useState, useEffect } from 'react';
+// src/components/admin/dashboard/OverviewTab.tsx
 import { SimpleGrid, Paper, Text, Stack, Center, Loader } from '@mantine/core';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { supabase } from '../../../services/supabaseClient';
-import { notifications } from '@mantine/notifications';
 
 interface OverviewTabProps {
-  dateRange: [Date | null, Date | null];
+  data: any; // Dữ liệu thống kê tổng quan
+  loading: boolean;
 }
 
-export function OverviewTab({ dateRange }: OverviewTabProps) {
-  const [stats, setStats] = useState<any>(null);
-  const [revenueData, setRevenueData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log('[DEBUG] OverviewTab received dateRange prop:', dateRange);
-
-      // Kiểm tra kỹ lưỡng nếu dateRange không hợp lệ
-      if (!dateRange || !dateRange[0] || !dateRange[1] || !(dateRange[0] instanceof Date) || !(dateRange[1] instanceof Date)) {
-        console.log('[DEBUG] Invalid dateRange detected. Aborting fetch.');
-        setStats(null);
-        setRevenueData([]);
-        setLoading(false); // Tắt loading nếu ngày không hợp lệ
-        return;
-      }
-      setLoading(true);
-
-      // Đặt giờ của ngày bắt đầu về 00:00:00
-      const startDate = new Date(dateRange[0]);
-      startDate.setHours(0, 0, 0, 0);
-
-      // Đặt giờ của ngày kết thúc về 23:59:59
-      const endDate = new Date(dateRange[1]);
-      endDate.setHours(23, 59, 59, 999);
-
-      const rpcParams = { 
-        start_date: startDate.toISOString(), 
-        end_date: endDate.toISOString() 
-      };
-      
-      console.log('[DEBUG] Calling RPC functions with params:', rpcParams);
-
-      try {
-        const statsPromise = supabase.rpc('get_dashboard_overview_stats', rpcParams);
-        const revenuePromise = supabase.rpc('get_revenue_over_time', rpcParams);
-
-        const [statsRes, revenueRes] = await Promise.all([statsPromise, revenuePromise]);
-        
-        console.log('[DEBUG] RPC Response (stats):', statsRes);
-        console.log('[DEBUG] RPC Response (revenue):', revenueRes);
-
-        if (statsRes.error) throw statsRes.error;
-        if (revenueRes.error) throw revenueRes.error;
-
-        setStats(statsRes.data[0]);
-        setRevenueData(revenueRes.data);
-      } catch (error: any) {
-        notifications.show({ title: 'Lỗi', message: 'Không thể tải dữ liệu Dashboard.', color: 'red' });
-        console.error('[DEBUG] Error during RPC call:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [dateRange]);
-
+export function OverviewTab({ data, loading }: OverviewTabProps) {
   if (loading) {
     return <Center h={400}><Loader /></Center>;
   }
 
-  if (!stats) {
+  if (!data) {
     return <Center h={400}><Text>Vui lòng chọn một khoảng thời gian hợp lệ.</Text></Center>;
   }
+
+  const { stats, revenueData } = data;
 
   return (
     <Stack>
@@ -99,8 +42,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
       <Paper withBorder radius="md" p="md">
         <Text fw={500} mb="md">Doanh thu theo thời gian</Text>
         <ResponsiveContainer width="100%" height={300} >
-          <LineChart data={revenueData}
-            margin={{ top: 20, right: 20, left: 40, bottom: 20 }}>
+          <LineChart data={revenueData} margin={{ top: 20, right: 20, left: 40, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis tickFormatter={(value) => new Intl.NumberFormat('vi-VN').format(value)} />

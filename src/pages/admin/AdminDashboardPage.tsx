@@ -1,9 +1,13 @@
+// src/pages/admin/AdminDashboardPage.tsx
 import { useState } from 'react';
 import { Container, Title, Tabs, Group } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { DatesRangeValue } from '@mantine/dates';
+
+// Import các components và hook mới
+import { useDashboard } from '../../hooks/api/useDashboard';
 import { OverviewTab } from '../../components/admin/dashboard/OverviewTab';
-import { EventAnalyticsTab } from '../../components/admin/dashboard/EventAnalyticsTab'; 
+import { EventAnalyticsTab } from '../../components/admin/dashboard/EventAnalyticsTab';
 import { TransactionAnalyticsTab } from '../../components/admin/dashboard/TransactionAnalyticsTab';
 
 export function AdminDashboardPage() {
@@ -12,11 +16,15 @@ export function AdminDashboardPage() {
   last30Days.setDate(today.getDate() - 30);
 
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([last30Days, today]);
+  
+  // Gọi hook để lấy tất cả dữ liệu cho dashboard
+  const { loading, overviewStats, eventAnalytics, transactionAnalytics } = useDashboard(dateRange);
 
+  // SỬA LỖI Ở ĐÂY: Tạo một hàm xử lý riêng biệt và rõ ràng
   const handleDateChange = (value: DatesRangeValue) => {
-    const [start, end] = value;
-    const newStartDate = start ? new Date(start) : null;
-    const newEndDate = end ? new Date(end) : null;
+    // Đảm bảo rằng chúng ta luôn có một mảng gồm 2 phần tử là Date hoặc null
+    const newStartDate = value[0] ? new Date(value[0]) : null;
+    const newEndDate = value[1] ? new Date(value[1]) : null;
     setDateRange([newStartDate, newEndDate]);
   };
 
@@ -28,7 +36,7 @@ export function AdminDashboardPage() {
           type="range"
           placeholder="Chọn khoảng thời gian"
           value={dateRange}
-          onChange={handleDateChange}
+          onChange={handleDateChange} // <-- Sử dụng hàm xử lý mới
           maw={300}
           clearable
         />
@@ -42,15 +50,16 @@ export function AdminDashboardPage() {
         </Tabs.List>
 
         <Tabs.Panel value="overview" pt="md">
-          <OverviewTab dateRange={dateRange} />
+          {/* SỬA LỖI Ở ĐÂY: Truyền đúng props cho OverviewTab */}
+          <OverviewTab data={{ stats: overviewStats, revenueData: [] }} loading={loading} />
         </Tabs.Panel>
 
         <Tabs.Panel value="events" pt="md">
-          <EventAnalyticsTab dateRange={dateRange} />
+          <EventAnalyticsTab data={eventAnalytics} loading={loading} />
         </Tabs.Panel>
         
         <Tabs.Panel value="transactions" pt="md">
-          <TransactionAnalyticsTab dateRange={dateRange} />
+          <TransactionAnalyticsTab data={transactionAnalytics} loading={loading} />
         </Tabs.Panel>
       </Tabs>
     </Container>

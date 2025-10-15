@@ -1,9 +1,11 @@
+// src/pages/admin/InvitedTicketsPage.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { Container, Title, Tabs, Grid, Select, Paper, Stack, Group, TextInput, NumberInput, ActionIcon, Button, Text, Alert, FileInput, Table, Divider, Flex } from '@mantine/core';
 import { IconPlus, IconTrash, IconInfoCircle, IconDownload, IconUpload } from '@tabler/icons-react';
-import { supabase } from '../../services/supabaseClient';
+import { supabase } from '../../services/supabaseClient'; // Vẫn cần để lấy events & ticket types
 import { notifications } from '@mantine/notifications';
 import * as XLSX from 'xlsx';
+import { InvitedTicketsApi } from '../../services/api/invitedTickets'; // <-- 1. IMPORT SERVICE MỚI
 
 // Định nghĩa kiểu dữ liệu cho khách mời
 interface Guest {
@@ -29,6 +31,7 @@ function ManualInputTab({ events, ticketTypes, selectedEventId, setSelectedEvent
   const addGuestRow = () => setGuests([...guests, { key: Math.random(), email: '', fullName: '', quantity: 1 }]);
   const removeGuestRow = (index: number) => setGuests(guests.filter((_, i) => i !== index));
 
+  // <-- 2. TÁI CẤU TRÚC HÀM NÀY
   const handleSubmit = async () => {
     setLoading(true);
     const validGuests = guests.filter(g => g.email && g.fullName && g.quantity > 0);
@@ -38,12 +41,15 @@ function ManualInputTab({ events, ticketTypes, selectedEventId, setSelectedEvent
       return;
     }
     try {
-      const { error } = await supabase.functions.invoke('create-invited-tickets', {
-        body: { eventId: selectedEventId, ticketTypeId: selectedTicketTypeId, guests: validGuests }
+      // Gọi đến service thay vì supabase.functions.invoke
+      await InvitedTicketsApi.createTickets({
+        eventId: selectedEventId,
+        ticketTypeId: selectedTicketTypeId,
+        guests: validGuests
       });
-      if (error) throw error;
+
       notifications.show({ title: 'Thành công', message: `Đã gửi yêu cầu tạo ${totalTickets} vé mời.`, color: 'green' });
-      setGuests([{ key: Math.random(), email: '', fullName: '', quantity: 1 }]);
+      setGuests([{ key: Math.random(), email: '', fullName: '', quantity: 1 }]); // Reset form
     } catch (err: any) {
       notifications.show({ title: 'Thất bại', message: err.message, color: 'red' });
     } finally {
@@ -53,7 +59,8 @@ function ManualInputTab({ events, ticketTypes, selectedEventId, setSelectedEvent
 
   return (
     <Paper withBorder p="md" radius="md">
-      <Stack>
+        {/* ... JSX của ManualInputTab không thay đổi ... */}
+        <Stack>
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}><Select required label="Chọn sự kiện" data={events} value={selectedEventId} onChange={setSelectedEventId} searchable /></Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6 }}><Select required label="Chọn loại vé" data={ticketTypes} value={selectedTicketTypeId} onChange={setSelectedTicketTypeId} disabled={!selectedEventId} searchable /></Grid.Col>
@@ -114,6 +121,7 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
   const [loading, setLoading] = useState(false);
   const totalTickets = useMemo(() => guests.reduce((sum, guest) => sum + (guest.quantity || 0), 0), [guests]);
 
+  // ... các hàm handleFileChange, handleDownloadTemplate không thay đổi ...
   const handleFileChange = (selectedFile: File | null) => {
     setFile(selectedFile);
     if (!selectedFile) {
@@ -128,7 +136,6 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
       const worksheet = workbook.Sheets[sheetName];
       const json: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-      // Chuyển đổi key và kiểu dữ liệu
       const parsedGuests = json.map(row => ({
         email: String(row.email || ''),
         fullName: String(row.full_name || ''),
@@ -146,10 +153,10 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
     XLSX.utils.book_append_sheet(workbook, worksheet, 'MauVeMoi');
     XLSX.writeFile(workbook, 'MauVeMoi.xlsx');
   };
-
+  
+  // <-- 3. TÁI CẤU TRÚC HÀM NÀY
   const handleSubmit = async () => {
     setLoading(true);
-    // Lấy danh sách khách mời đã được đọc từ file
     const validGuests = guests.filter(g => g.email && g.fullName && g.quantity > 0);
     if (validGuests.length === 0 || !selectedEventId || !selectedTicketTypeId) {
       notifications.show({ title: 'Lỗi', message: 'Không có dữ liệu hợp lệ hoặc chưa chọn Sự kiện/Loại vé.', color: 'red' });
@@ -158,16 +165,14 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
     }
 
     try {
-      const { error } = await supabase.functions.invoke('create-invited-tickets', {
-        body: {
-          eventId: selectedEventId,
-          ticketTypeId: selectedTicketTypeId,
-          guests: validGuests,
-        }
+      // Gọi đến service thay vì supabase.functions.invoke
+      await InvitedTicketsApi.createTickets({
+        eventId: selectedEventId,
+        ticketTypeId: selectedTicketTypeId,
+        guests: validGuests,
       });
-      if (error) throw error;
+
       notifications.show({ title: 'Thành công', message: `Đã gửi yêu cầu tạo ${totalTickets} vé mời.`, color: 'green' });
-      // Reset trạng thái sau khi gửi thành công
       setFile(null);
       setGuests([]);
     } catch (err: any) {
@@ -180,7 +185,8 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
 
   return (
     <Paper withBorder p="md" radius="md">
-      <Stack>
+        {/* ... JSX của ExcelInputTab không thay đổi ... */}
+        <Stack>
         <Flex gap="xs" mt="md">
           <Select required label="Chọn sự kiện" data={events} value={selectedEventId} onChange={setSelectedEventId} searchable flex={2} />
           <Select required label="Chọn loại vé" data={ticketTypes} value={selectedTicketTypeId} onChange={setSelectedTicketTypeId} disabled={!selectedEventId} searchable flex={2} />
@@ -222,7 +228,7 @@ function ExcelInputTab({ events, ticketTypes, selectedEventId, setSelectedEventI
   );
 }
 
-// Component Trang chính
+// Component Trang chính không thay đổi
 export function InvitedTicketsPage() {
   const [events, setEvents] = useState<{ value: string; label: string }[]>([]);
   const [ticketTypes, setTicketTypes] = useState<{ value: string; label: string }[]>([]);

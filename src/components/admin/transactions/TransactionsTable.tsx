@@ -52,7 +52,7 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
         <Group align="center" gap="xs" wrap="nowrap">
           <Tooltip label={trans.users?.email}>
             <Group wrap='nowrap' gap="xs">
-              <Avatar radius="xl" />
+              <Avatar src={trans.users?.avatar_url} radius="xl" />
               <Box w={150}>
                 <Text truncate maw={150} size="sm" fw={500}>{trans.users?.full_name}</Text>
                 <Text truncate maw={150} size="xs" c="dimmed">{trans.users?.email}</Text>
@@ -85,9 +85,15 @@ export function TransactionsTable({ transactions, loading, selection, setSelecti
       <Table.Td>{trans.events?.title || 'N/A'}</Table.Td>
       <Table.Td>{trans.total_amount.toLocaleString('vi-VN')}đ</Table.Td>
       <Table.Td>
-        <Badge color={statusMapping[trans.status]?.color || 'gray'}>
-          {statusMapping[trans.status]?.label || trans.status}
-        </Badge>
+        {trans.type === 'invitation' ? (
+          <Badge color="violet" variant="light">
+            Vé mời
+          </Badge>
+        ) : (
+          <Badge color={statusMapping[trans.status]?.color || 'gray'}>
+            {statusMapping[trans.status]?.label || trans.status}
+          </Badge>
+        )}
       </Table.Td>
       <Table.Td>{formatDateTime(trans.created_at)}</Table.Td>
     </Table.Tr>

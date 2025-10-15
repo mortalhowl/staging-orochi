@@ -1,12 +1,13 @@
+// src/pages/admin/CheckInPage.tsx
 import { useState, useEffect } from 'react';
 import { Container, Select, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { supabase } from '../../services/supabaseClient';
+import { supabase } from '../../services/supabaseClient'; // Vẫn cần để lấy danh sách sự kiện
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '../../utils/formatters';
 import { IconAlertCircle, IconCircleCheck, IconX, IconScan, IconCamera, IconCameraOff, IconArrowsLeftRight, IconChecks } from '@tabler/icons-react';
-import { getSupabaseFnError } from '../../utils/supabaseFnError';
+import { CheckInApi } from '../../services/api/checkin';
 
 interface EventSelectItem { value: string; label: string; }
 interface ModalData {
@@ -16,51 +17,49 @@ interface ModalData {
 }
 
 // Component con để hiển thị kết quả trong Modal
+// Component con ResultDisplay không thay đổi
 function ResultDisplay({ data, onCheckIn, loading }: { data: ModalData, onCheckIn: (ticketId: string) => void, loading: boolean }) {
-  const statusMap = {
-    VALID: { color: 'blue', title: 'Vé Hợp Lệ', icon: <IconScan /> },
-    SUCCESS: { color: 'green', title: 'Thành Công!', icon: <IconCircleCheck /> },
-    ALREADY_USED: { color: 'orange', title: 'Vé Đã Được Sử Dụng', icon: <IconAlertCircle /> },
-    INVALID: { color: 'red', title: 'Vé Không Hợp Lệ', icon: <IconX /> },
-  };
-  const { color, title, icon } = statusMap[data.status];
+    const statusMap = {
+        VALID: { color: 'blue', title: 'Vé Hợp Lệ', icon: <IconScan /> },
+        SUCCESS: { color: 'green', title: 'Thành Công!', icon: <IconCircleCheck /> },
+        ALREADY_USED: { color: 'orange', title: 'Vé Đã Được Sử Dụng', icon: <IconAlertCircle /> },
+        INVALID: { color: 'red', title: 'Vé Không Hợp Lệ', icon: <IconX /> },
+    };
+    const { color, title, icon } = statusMap[data.status];
 
-  return (
-    <Stack>
-      <Group>
-        <Alert variant="light" color={color} title={title} icon={icon} w="100%">
-          <Stack>
-            {/* Nếu là SUCCESS thì chỉ hiển thị message */}
-            {data.status === 'SUCCESS' ? (
-              <Text fw={500} c="green">Đã Check-in thành công!</Text>
-            ) : (
-              <>
-                {data.message && <Text>{data.message}</Text>}
-                {data.ticket && (
-                  <>
-                    <Text><b>Mã vé:</b> {data.ticket.id}</Text>
-                    <Text><b>Khách hàng:</b> {data.ticket.transactions?.users?.full_name || data.ticket.full_name}</Text>
-                    <Text><b>Email:</b> {data.ticket.transactions?.users?.email || data.ticket.email}</Text>
-                    <Text><b>Loại vé:</b> {data.ticket.ticket_types?.name}</Text>
-                    {data.ticket.is_used && (
-                      <Text><b>Thời gian check-in:</b> {formatDateTime(data.ticket.used_at)} bởi {data.ticket.checked_in_by_user?.full_name}</Text>
-                    )}
-                  </>
-                )}
-              </>
+    return (
+        <Stack>
+            <Group>
+                <Alert variant="light" color={color} title={title} icon={icon} w="100%">
+                    <Stack>
+                        {data.status === 'SUCCESS' ? (
+                            <Text fw={500} c="green">Đã Check-in thành công!</Text>
+                        ) : (
+                            <>
+                                {data.message && <Text>{data.message}</Text>}
+                                {data.ticket && (
+                                    <>
+                                        <Text><b>Mã vé:</b> {data.ticket.id}</Text>
+                                        <Text><b>Khách hàng:</b> {data.ticket.transactions?.users?.full_name || data.ticket.full_name}</Text>
+                                        <Text><b>Email:</b> {data.ticket.transactions?.users?.email || data.ticket.email}</Text>
+                                        <Text><b>Loại vé:</b> {data.ticket.ticket_types?.name}</Text>
+                                        {data.ticket.is_used && (
+                                            <Text><b>Thời gian check-in:</b> {formatDateTime(data.ticket.used_at)} bởi {data.ticket.checked_in_by_user?.full_name}</Text>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </Stack>
+                </Alert>
+            </Group>
+            {data.status === 'VALID' && (
+                <Button onClick={() => onCheckIn(data.ticket.id)} loading={loading}>
+                    Check-in
+                </Button>
             )}
-          </Stack>
-        </Alert>
-      </Group>
-
-      {/* Chỉ hiển thị nút check-in khi status = VALID */}
-      {data.status === 'VALID' && (
-        <Button onClick={() => onCheckIn(data.ticket.id)} loading={loading}>
-          Check-in
-        </Button>
-      )}
-    </Stack>
-  );
+        </Stack>
+    );
 }
 
 export function CheckInPage() {
@@ -155,22 +154,19 @@ export function CheckInPage() {
     openModal();
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-in-ticket', {
-        body: { ticketId, eventId: selectedEventId, performCheckIn },
+      // Gọi đến service thay vì supabase.functions.invoke
+      const data = await CheckInApi.lookupOrPerformCheckIn({
+        ticketId,
+        eventId: selectedEventId,
+        performCheckIn,
       });
-
-      if (error) {
-        // Sử dụng hàm getSupabaseFnError để lấy lỗi chi tiết
-        const message = await getSupabaseFnError(error);
-        throw new Error(message);
-      }
 
       setModalData({ status: data.status, ticket: data.ticket, message: null });
       if (data.status === 'SUCCESS') {
-        setTimeout(() => handleModalClose(), 2000);
+        setTimeout(() => handleModalClose(), 2000); // Đóng modal sau 2s nếu thành công
       }
     } catch (err: any) {
-      // Khối catch này giờ sẽ nhận được thông báo lỗi chính xác
+      // Lỗi đã được xử lý bởi service, chỉ cần hiển thị
       setModalData({ status: 'INVALID', ticket: null, message: err.message });
     } finally {
       setLoading(false);

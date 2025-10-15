@@ -42,12 +42,22 @@ export function TransactionsToolbar({ filters, setFilters }: TransactionsToolbar
 
       {/* Cụm còn lại chiếm 6 cột => 1/2 */}
       <Grid.Col span={{ base: 12, md: 6 }}>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
           <Select
             placeholder="Lọc theo sự kiện"
             data={events}
             value={filters.eventId}
             onChange={(value) => handleFilterChange('eventId', value)}
+            clearable
+          />
+          <Select
+            placeholder="Loại giao dịch"
+            data={[
+              { value: 'sale', label: 'Vé bán' },
+              { value: 'invitation', label: 'Vé mời' },
+            ]}
+            value={filters.type}
+            onChange={(value) => handleFilterChange('type', value)}
             clearable
           />
           <Select

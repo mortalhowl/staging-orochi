@@ -1,55 +1,21 @@
-import { useState, useEffect } from 'react';
+// src/components/admin/dashboard/EventAnalyticsTab.tsx
+import { useState } from 'react';
 import { Paper, Text, Center, Loader, Table, MultiSelect, Stack, ScrollArea } from '@mantine/core';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { supabase } from '../../../services/supabaseClient';
 
 interface EventAnalyticsTabProps {
-  dateRange: [Date | null, Date | null];
+  data: any[];
+  loading: boolean;
 }
 
-interface EventAnalyticData {
-  event_id: string;
-  event_name: string;
-  total_revenue: number;
-  tickets_sold: number;
-}
-
-export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
-  const [analyticsData, setAnalyticsData] = useState<EventAnalyticData[]>([]);
-  const [chartEvents, setChartEvents] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!dateRange || !dateRange[0] || !dateRange[1]) return;
-      setLoading(true);
-
-      const startDate = new Date(dateRange[0]);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(dateRange[1]);
-      endDate.setHours(23, 59, 59, 999);
-
-      const { data } = await supabase.rpc('get_event_analytics', {
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-      });
-
-      if (data) {
-        setAnalyticsData(data);
-        // Mặc định chọn 5 sự kiện hàng đầu cho biểu đồ
-        setChartEvents(data.slice(0, 5).map((d: EventAnalyticData) => d.event_name));
-      }
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [dateRange]);
+export function EventAnalyticsTab({ data, loading }: EventAnalyticsTabProps) {
+  const [chartEvents, setChartEvents] = useState<string[]>(data.slice(0, 5).map(d => d.event_name));
 
   if (loading) {
     return <Center h={400}><Loader /></Center>;
   }
 
-  const chartData = analyticsData.filter(d => chartEvents.includes(d.event_name));
+  const chartData = data.filter(d => chartEvents.includes(d.event_name));
 
   return (
     <Stack>
@@ -58,7 +24,7 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
         <MultiSelect
           label="Chọn sự kiện để hiển thị trên biểu đồ"
           placeholder="Chọn tối đa 5 sự kiện"
-          data={analyticsData.map(d => d.event_name)}
+          data={data.map(d => d.event_name)}
           value={chartEvents}
           onChange={setChartEvents}
           maxValues={5}
@@ -91,7 +57,7 @@ export function EventAnalyticsTab({ dateRange }: EventAnalyticsTabProps) {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {analyticsData.map(row => (
+            {data.map(row => (
               <Table.Tr key={row.event_id}>
                 <Table.Td>{row.event_name}</Table.Td>
                 <Table.Td>{row.total_revenue.toLocaleString('vi-VN')}đ</Table.Td>

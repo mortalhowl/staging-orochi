@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
+import { ROUTES } from './config/routes'; // Import hằng số routes
 
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
@@ -34,16 +35,15 @@ import { CheckInPage } from './pages/admin/CheckInPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
-import { ForbiddenPage } from './pages/admin/ForbiddenPage';
+import { ForbiddenPage } from './pages/errors/ForbiddenPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { ArticleDetailPage } from './pages/ArticleDetailPage';
-import { ProfilePage } from './pages/admin/ProfilePage'; 
+import { ProfilePage } from './pages/admin/ProfilePage';
 import { CompanyInfoPage } from './pages/admin/CompanyInfoPage';
 import { VouchersPage } from './pages/admin/VouchersPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+import { NotFoundPage } from './pages/errors/NotFoundPage';
 
 export function App() {
-
   useEffect(() => {
     useAuthStore.getState().checkSession();
   }, []);
@@ -54,69 +54,69 @@ export function App() {
       <Routes>
         {/* === PUBLIC ROUTES === */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/events/:slug" element={<EventDetailPage />} />
-          <Route path="/articles/:slug" element={<ArticleDetailPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/payment/:transactionId" element={<PaymentPage />} />
+          <Route path={ROUTES.PUBLIC.HOME} element={<HomePage />} />
+          <Route path={ROUTES.PUBLIC.EVENT_DETAIL} element={<EventDetailPage />} />
+          <Route path={ROUTES.PUBLIC.ARTICLE_DETAIL} element={<ArticleDetailPage />} />
+          <Route path={ROUTES.PUBLIC.CHECKOUT} element={<CheckoutPage />} />
+          <Route path={ROUTES.PUBLIC.PAYMENT} element={<PaymentPage />} />
           <Route element={<PublicAuthGuard />}>
-            <Route path="/my-tickets" element={<MyTicketsPage />} />
+            <Route path={ROUTES.PUBLIC.MY_TICKETS} element={<MyTicketsPage />} />
           </Route>
         </Route>
 
-        <Route path="/update-password" element={<UpdatePasswordPage />} />
+        <Route path={ROUTES.PUBLIC.UPDATE_PASSWORD} element={<UpdatePasswordPage />} />
 
         {/* === ADMIN ROUTES === */}
-        <Route path="/admin/login" element={<LoginPage />} />
+        <Route path={ROUTES.ADMIN.LOGIN} element={<LoginPage />} />
 
         <Route element={<AuthGuard />}>
           <Route element={<AdminLayout />}>
-            {/* Các trang chung mà mọi admin/staff đều có thể vào */}
-            <Route path="/admin/home" element={<AdminHomePage />} />
-            <Route path="/admin/profile" element={<ProfilePage />} />
-            <Route path="/admin/forbidden" element={<ForbiddenPage />} />
+            {/* Các trang chung */}
+            <Route path={ROUTES.ADMIN.HOME} element={<AdminHomePage />} />
+            <Route path={ROUTES.ADMIN.PROFILE} element={<ProfilePage />} />
+            <Route path={ROUTES.ERRORS.FORBIDDEN} element={<ForbiddenPage />} />
 
-            {/* Bọc mỗi module trong một PermissionGuard tương ứng */}
+            {/* Routes được bảo vệ bởi PermissionGuard */}
             <Route element={<PermissionGuard moduleCode="dashboard" />}>
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboardPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="events" />}>
-              <Route path="/admin/events" element={<EventsPage />} />
+              <Route path={ROUTES.ADMIN.EVENTS} element={<EventsPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="articles" />}>
-              <Route path="/admin/articles" element={<ArticlesPage />} />
+              <Route path={ROUTES.ADMIN.ARTICLES} element={<ArticlesPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="transactions" />}>
-              <Route path="/admin/transactions" element={<TransactionsPage />} />
+              <Route path={ROUTES.ADMIN.TRANSACTIONS} element={<TransactionsPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="invited-tickets" />}>
-              <Route path="/admin/invited-tickets" element={<InvitedTicketsPage />} />
+              <Route path={ROUTES.ADMIN.INVITED_TICKETS} element={<InvitedTicketsPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="tickets" />}>
-              <Route path="/admin/tickets" element={<IssuedTicketsPage />} />
+              <Route path={ROUTES.ADMIN.ISSUED_TICKETS} element={<IssuedTicketsPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="check-in" />}>
-              <Route path="/admin/check-in" element={<CheckInPage />} />
+              <Route path={ROUTES.ADMIN.CHECK_IN} element={<CheckInPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="vouchers" />}>
-              <Route path="/admin/vouchers" element={<VouchersPage />} />
+              <Route path={ROUTES.ADMIN.VOUCHERS} element={<VouchersPage />} />
             </Route>
-            <Route path="/admin/vouchers" element={<VouchersPage />} />
             <Route element={<PermissionGuard moduleCode="users" />}>
-              <Route path="/admin/users" element={<UsersPage />} />
-              <Route path="/admin/users/:userId" element={<UserDetailPage />} />
+              <Route path={ROUTES.ADMIN.USERS} element={<UsersPage />} />
+              <Route path={ROUTES.ADMIN.USER_DETAIL} element={<UserDetailPage />} />
             </Route>
             <Route element={<PermissionGuard moduleCode="settings" />}>
-              <Route path="/admin/settings" element={<SettingsPage />} />
-              <Route path="/admin/settings/bank" element={<BankConfigPage />} />
-              <Route path="/admin/settings/email-config" element={<EmailConfigPage />} />
-              <Route path="/admin/settings/email-templates" element={<EmailTemplatesPage />} />
-              <Route path="/admin/settings/company" element={<CompanyInfoPage />} />
+              <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />
+              <Route path={ROUTES.ADMIN.SETTINGS_BANK} element={<BankConfigPage />} />
+              <Route path={ROUTES.ADMIN.SETTINGS_EMAIL_CONFIG} element={<EmailConfigPage />} />
+              <Route path={ROUTES.ADMIN.SETTINGS_EMAIL_TEMPLATES} element={<EmailTemplatesPage />} />
+              <Route path={ROUTES.ADMIN.SETTINGS_COMPANY} element={<CompanyInfoPage />} />
             </Route>
           </Route>
         </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
+        {/* Trang 404 */}
+        <Route path={ROUTES.ERRORS.NOT_FOUND} element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,7 +1,7 @@
 // src/components/public/EventCard.tsx
 import { Card, Image, Text, Badge, Button, Group } from '@mantine/core';
 import { Link } from 'react-router-dom';
-import type { Event } from '../../types';
+import type { Event } from '../../../../types';
 
 interface EventCardProps {
   event: Event;

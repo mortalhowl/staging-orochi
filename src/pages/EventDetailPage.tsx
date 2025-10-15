@@ -5,8 +5,8 @@ import { supabase } from '../services/supabaseClient';
 import type { EventWithDetails } from '../types';
 import { Container, Loader, Center, Alert, Image, Title, Text, Grid, Stack, Divider, Group, ActionIcon } from '@mantine/core';
 import { IconAlertCircle, IconCalendar, IconMapPin, IconClock } from '@tabler/icons-react';
-import { TicketSelection } from '../components/public/TicketSelection';
-import { ArticleGrid } from '../components/public/ArticleGrid';
+import { TicketSelection } from '../components/public/public/events/TicketSelection';
+import { ArticleGrid } from '../components/public/articles/ArticleGrid';
 import { formatDateRange } from '../utils/formatters';
 
 export function EventDetailPage() {

@@ -1,85 +1,47 @@
+// src/pages/admin/ArticlesPage.tsx
 import { useState, useEffect } from 'react';
 import { Title, Button, Group, Paper, TextInput, Select, Pagination, SimpleGrid, Container } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconSearch } from '@tabler/icons-react';
-import { supabase } from '../../services/supabaseClient';
+
+// Import các components và hooks đã được tái cấu trúc
 import { ArticlesTable } from '../../components/admin/articles/ArticlesTable';
 import { ArticleFormModal } from '../../components/admin/articles/ArticleFormModal';
 import { ArticleDetailDrawer } from '../../components/admin/articles/ArticleDetailDrawer';
 import { ArticlesToolbar } from '../../components/admin/articles/ArticlesToolbar';
-import type { Article } from '../../types';
-import { useDebounce } from 'use-debounce';
-import { notifications } from '@mantine/notifications';
 import { useAuthStore } from '../../store/authStore';
+import { useArticles } from '../../hooks/api/useArticles'; // <-- SỬ DỤNG CUSTOM HOOK
+import { supabase } from '../../services/supabaseClient'; // Vẫn cần dùng để lấy danh sách events cho filter
+import type { Article } from '../../types';
 
-const ITEMS_PER_PAGE = 10;
 interface EventSelectItem { value: string; label: string; }
 
 export function ArticlesPage() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Toàn bộ logic về state và fetching bài viết được đóng gói trong hook này
+  const {
+    articles,
+    loading,
+    totalItems,
+    activePage,
+    setPage,
+    filters,
+    setFilters,
+    refresh,
+    itemsPerPage,
+  } = useArticles();
+
+  // State cho UI vẫn giữ lại ở component
   const [events, setEvents] = useState<EventSelectItem[]>([]);
   const [selection, setSelection] = useState<string[]>([]);
-  const [activePage, setPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [eventFilter, setEventFilter] = useState<string | null>(null);
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 400);
-
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [articleToEdit, setArticleToEdit] = useState<Article | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const { hasEditPermission } = useAuthStore(); 
+
+  const { hasEditPermission } = useAuthStore();
   const canEditArticles = hasEditPermission('articles');
 
-  useEffect(() => {
-    const fetchPageData = async () => {
-      setLoading(true);
-      setSelection([]);
-
-      const from = (activePage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      // 1. Query để lấy dữ liệu trang hiện tại (bỏ { count: 'exact' })
-      let dataQuery = supabase
-        .from('articles')
-        .select('*, events(id, title)')
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (debouncedSearchTerm) {
-        dataQuery = dataQuery.ilike('title', `%${debouncedSearchTerm}%`);
-      }
-      if (eventFilter) {
-        dataQuery = dataQuery.eq('event_id', eventFilter);
-      }
-      
-      // 2. Query để đếm tổng số lượng, sử dụng RPC
-      const countParams = {
-        search_term: debouncedSearchTerm,
-        p_event_id: eventFilter,
-      };
-      const countPromise = supabase.rpc('count_articles', countParams);
-
-      // 3. Chạy cả hai query song song
-      const [dataRes, countRes] = await Promise.all([dataQuery, countPromise]);
-
-      if (dataRes.error || countRes.error) {
-        notifications.show({ title: 'Lỗi', message: 'Không thể tải danh sách bài viết.', color: 'red' });
-        console.error(dataRes.error || countRes.error);
-      } else {
-        setArticles(dataRes.data as Article[]);
-        // 4. Lấy tổng số lượng từ kết quả của RPC
-        setTotalItems(countRes.data ?? 0);
-      }
-      setLoading(false);
-    };
-
-    fetchPageData();
-  }, [activePage, debouncedSearchTerm, eventFilter, refreshKey]);
-  
+  // Effect này chỉ để lấy danh sách sự kiện cho dropdown filter
   useEffect(() => {
     const fetchEventsForSelect = async () => {
       const { data } = await supabase.from('events').select('id, title');
@@ -94,11 +56,36 @@ export function ArticlesPage() {
     fetchEventsForSelect();
   }, []);
 
-  const handleSuccess = () => setRefreshKey((prev) => prev + 1);
-  const handleRowClick = (articleId: string) => { setSelectedArticleId(articleId); openDrawer(); };
-  const handleAddNew = () => { setArticleToEdit(null); openModal(); };
-  const handleEdit = (article: Article) => { setArticleToEdit(article); closeDrawer(); openModal(); };
-  const handleCloseModal = () => { closeModal(); setArticleToEdit(null); };
+  const handleSuccess = () => {
+    refresh();
+    setSelection([]);
+  };
+
+  const handleRowClick = (articleId: string) => {
+    setSelectedArticleId(articleId);
+    openDrawer();
+  };
+
+  const handleAddNew = () => {
+    setArticleToEdit(null);
+    openModal();
+  };
+
+  const handleEdit = (article: Article) => {
+    setArticleToEdit(article);
+    closeDrawer();
+    openModal();
+  };
+
+  const handleCloseModal = () => {
+    closeModal();
+    setArticleToEdit(null);
+  };
+  
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPage(1); // Reset về trang 1 khi filter
+  };
 
   return (
     <Container size="xl" mt="md">
@@ -114,20 +101,20 @@ export function ArticlesPage() {
           <TextInput
             placeholder="Tìm kiếm theo tiêu đề..."
             leftSection={<IconSearch size={16} />}
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.currentTarget.value)}
+            value={filters.searchTerm}
+            onChange={(event) => handleFilterChange('searchTerm', event.currentTarget.value)}
           />
           <Select
             placeholder="Lọc theo sự kiện"
             data={events}
-            value={eventFilter}
-            onChange={setEventFilter}
+            value={filters.eventId}
+            onChange={(value) => handleFilterChange('eventId', value)}
             searchable
             clearable
           />
         </SimpleGrid>
 
-        {selection.length > 0 && (
+        {selection.length > 0 && canEditArticles && (
           <ArticlesToolbar
             selection={selection}
             onSuccess={handleSuccess}
@@ -146,10 +133,10 @@ export function ArticlesPage() {
 
         <Group justify="center" mt="md">
           <Pagination
-            total={Math.ceil(totalItems / ITEMS_PER_PAGE)}
+            total={Math.ceil(totalItems / itemsPerPage)}
             value={activePage}
             onChange={setPage}
-            withEdges // Thêm withEdges cho nhất quán
+            withEdges
           />
         </Group>
       </Paper>

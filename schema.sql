@@ -19,6 +19,12 @@ CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
 
 
 
+CREATE SCHEMA IF NOT EXISTS "private";
+
+
+ALTER SCHEMA "private" OWNER TO "postgres";
+
+
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
@@ -205,6 +211,52 @@ CREATE TYPE "public"."voucher_discount_type" AS ENUM (
 ALTER TYPE "public"."voucher_discount_type" OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "private"."on_user_updated"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- Cập nhật role claim trong auth.users
+  PERFORM private.set_claim(new.id, 'role', to_jsonb(new.role));
+  RETURN new;
+END;
+$$;
+
+
+ALTER FUNCTION "private"."on_user_updated"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."set_claim"("uid" "uuid", "claim" "text", "value" "jsonb") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  UPDATE auth.users
+  SET raw_app_meta_data = raw_app_meta_data || jsonb_build_object(claim, value)
+  WHERE id = uid;
+END;
+$$;
+
+
+ALTER FUNCTION "private"."set_claim"("uid" "uuid", "claim" "text", "value" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."can_staff_manage_users"() RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.permissions p
+    JOIN public.modules m ON p.module_id = m.id
+    WHERE p.user_id = auth.uid() AND m.code = 'users' AND p.can_edit = true
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."can_staff_manage_users"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."count_articles"("search_term" "text", "p_event_id" "uuid" DEFAULT NULL::"uuid") RETURNS bigint
     LANGUAGE "plpgsql"
     AS $$
@@ -345,6 +397,47 @@ $$;
 
 ALTER FUNCTION "public"."count_vouchers"("search_term" "text", "p_is_active" boolean) OWNER TO "postgres";
 
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."users" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email" "text" NOT NULL,
+    "full_name" "text",
+    "phone" "text",
+    "avatar_url" "text",
+    "role" "public"."user_role" DEFAULT 'viewer'::"public"."user_role",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "status" "public"."user_status" DEFAULT 'active'::"public"."user_status" NOT NULL
+);
+
+
+ALTER TABLE "public"."users" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_all_users"() RETURNS SETOF "public"."users"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+    -- Chỉ cho phép admin hoặc staff có quyền xem module 'users' mới được chạy hàm này
+    IF (
+        (SELECT role::text FROM public.users WHERE id = auth.uid()) = 'admin' OR
+        EXISTS (
+            SELECT 1 FROM public.permissions p
+            JOIN public.modules m ON p.module_id = m.id
+            WHERE p.user_id = auth.uid() AND m.code = 'users' AND p.can_view = true
+        )
+    ) THEN
+        RETURN QUERY SELECT * FROM public.users;
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_all_users"() OWNER TO "postgres";
+
 
 CREATE OR REPLACE FUNCTION "public"."get_dashboard_overview_stats"("start_date" timestamp with time zone, "end_date" timestamp with time zone) RETURNS TABLE("total_revenue" bigint, "tickets_sold" bigint, "total_orders" bigint, "new_customers" bigint)
     LANGUAGE "plpgsql"
@@ -433,6 +526,20 @@ $$;
 ALTER FUNCTION "public"."get_issued_tickets_stats"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_my_role"() RETURNS "text"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  RETURN (
+    SELECT role::text FROM public.users WHERE id = auth.uid()
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_my_role"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_revenue_over_time"("start_date" timestamp with time zone, "end_date" timestamp with time zone) RETURNS TABLE("date" "text", "revenue" numeric)
     LANGUAGE "plpgsql"
     AS $$
@@ -508,10 +615,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_transaction_stats"("search_term" "text", "p_status" "text", "p_event_id" "uuid", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone) OWNER TO "postgres";
-
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
 
 
 CREATE TABLE IF NOT EXISTS "public"."issued_tickets" (
@@ -666,23 +769,6 @@ $$;
 ALTER FUNCTION "public"."increment_voucher_usage"("p_voucher_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."is_admin_or_staff"() RETURNS boolean
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    AS $$
-BEGIN
-  RETURN (
-    SELECT EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role IN ('admin', 'staff')
-    )
-  );
-END;
-$$;
-
-
-ALTER FUNCTION "public"."is_admin_or_staff"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."search_issued_tickets"("search_term" "text", "p_event_id" "uuid" DEFAULT NULL::"uuid", "p_is_invite" boolean DEFAULT NULL::boolean, "p_is_used" boolean DEFAULT NULL::boolean, "p_status" "public"."issued_ticket_status" DEFAULT NULL::"public"."issued_ticket_status") RETURNS SETOF "public"."full_ticket_details"
     LANGUAGE "plpgsql"
     AS $$
@@ -782,21 +868,6 @@ $$;
 
 
 ALTER FUNCTION "public"."search_transactions"("search_term" "text", "p_status" "text", "p_event_id" "uuid", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone) OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."users" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "email" "text" NOT NULL,
-    "full_name" "text",
-    "phone" "text",
-    "avatar_url" "text",
-    "role" "public"."user_role" DEFAULT 'viewer'::"public"."user_role",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "status" "public"."user_status" DEFAULT 'active'::"public"."user_status" NOT NULL
-);
-
-
-ALTER TABLE "public"."users" OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."search_users"("search_term" "text", "p_role" "public"."user_role" DEFAULT NULL::"public"."user_role") RETURNS SETOF "public"."users"
@@ -1160,6 +1231,10 @@ CREATE OR REPLACE TRIGGER "on_ticket_types_update" BEFORE UPDATE ON "public"."ti
 
 
 
+CREATE OR REPLACE TRIGGER "on_user_updated_trigger" AFTER INSERT OR UPDATE OF "role" ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "private"."on_user_updated"();
+
+
+
 CREATE OR REPLACE TRIGGER "on_vouchers_update" BEFORE UPDATE ON "public"."vouchers" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
 
@@ -1239,91 +1314,15 @@ ALTER TABLE ONLY "public"."vouchers"
 
 
 
-CREATE POLICY "Admin and staff can view all articles" ON "public"."articles" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all events" ON "public"."events" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all ticket types" ON "public"."ticket_types" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all tickets" ON "public"."issued_tickets" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all transaction items" ON "public"."transaction_items" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all transactions" ON "public"."transactions" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view all users" ON "public"."users" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view modules" ON "public"."modules" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admin and staff can view vouchers" ON "public"."vouchers" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
 CREATE POLICY "Admins and staff can create transaction notes" ON "public"."transaction_notes" FOR INSERT WITH CHECK ((( SELECT ("users"."role")::"text" AS "role"
    FROM "public"."users"
   WHERE ("users"."id" = "auth"."uid"())) = ANY (ARRAY['admin'::"text", 'staff'::"text"])));
 
 
 
-CREATE POLICY "Admins and staff can delete all transaction items" ON "public"."transaction_items" FOR DELETE USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admins and staff can manage company info" ON "public"."company_info" USING (true) WITH CHECK ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = ANY (ARRAY['admin'::"text", 'staff'::"text"])));
-
-
-
-CREATE POLICY "Admins and staff can update all transaction items" ON "public"."transaction_items" FOR UPDATE USING ("public"."is_admin_or_staff"());
-
-
-
-CREATE POLICY "Admins and staff can view all transaction items" ON "public"."transaction_items" FOR SELECT USING ("public"."is_admin_or_staff"());
-
-
-
 CREATE POLICY "Admins and staff can view transaction notes" ON "public"."transaction_notes" FOR SELECT USING ((( SELECT ("users"."role")::"text" AS "role"
    FROM "public"."users"
   WHERE ("users"."id" = "auth"."uid"())) = ANY (ARRAY['admin'::"text", 'staff'::"text"])));
-
-
-
-CREATE POLICY "Admins can delete users" ON "public"."users" FOR DELETE USING ((( SELECT ("users_1"."role")::"text" AS "role"
-   FROM "public"."users" "users_1"
-  WHERE ("users_1"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Admins can insert new users" ON "public"."users" FOR INSERT WITH CHECK ((( SELECT ("users_1"."role")::"text" AS "role"
-   FROM "public"."users" "users_1"
-  WHERE ("users_1"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Admins can view all permissions" ON "public"."permissions" FOR SELECT USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Authenticated users can create transactions" ON "public"."transactions" FOR INSERT WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
 
 
 
@@ -1336,244 +1335,6 @@ CREATE POLICY "Authorized staff can check-in tickets" ON "public"."issued_ticket
      JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
   WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'check-in'::"text") AND ("p"."can_view" = true)))))));
 
-
-
-CREATE POLICY "Authorized users can delete tickets" ON "public"."issued_tickets" FOR DELETE USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'tickets'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can delete transactions" ON "public"."transactions" FOR DELETE USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'transactions'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can manage articles" ON "public"."articles" USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'articles'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can manage events" ON "public"."events" USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'events'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can manage ticket types" ON "public"."ticket_types" USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'events'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can manage vouchers" ON "public"."vouchers" USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'vouchers'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Authorized users can update transactions" ON "public"."transactions" FOR UPDATE USING (((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text") OR ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'staff'::"text") AND (EXISTS ( SELECT 1
-   FROM ("public"."permissions" "p"
-     JOIN "public"."modules" "m" ON (("p"."module_id" = "m"."id")))
-  WHERE (("p"."user_id" = "auth"."uid"()) AND ("m"."code" = 'transactions'::"text") AND ("p"."can_edit" = true)))))));
-
-
-
-CREATE POLICY "Only admins can manage configuration" ON "public"."bank_configs" USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Only admins can manage configuration" ON "public"."company_info" USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Only admins can manage configuration" ON "public"."email_configs" USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Only admins can manage configuration" ON "public"."email_templates" USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Only admins can manage modules" ON "public"."modules" USING ((( SELECT "users"."role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"public"."user_role"));
-
-
-
-CREATE POLICY "Only admins can manage permissions" ON "public"."permissions" USING ((( SELECT ("users"."role")::"text" AS "role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Public can read company info" ON "public"."company_info" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Public can read configuration" ON "public"."bank_configs" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Public can read configuration" ON "public"."company_info" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Public can read configuration" ON "public"."email_configs" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Public can read configuration" ON "public"."email_templates" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Public can view active events" ON "public"."events" FOR SELECT USING (("is_active" = true));
-
-
-
-CREATE POLICY "Public can view public ticket types" ON "public"."ticket_types" FOR SELECT USING (("status" = 'public'::"public"."ticket_status"));
-
-
-
-CREATE POLICY "Public can view published articles" ON "public"."articles" FOR SELECT USING (("status" = 'public'::"public"."article_status"));
-
-
-
-CREATE POLICY "Public can view published content" ON "public"."articles" FOR SELECT USING (("status" = 'public'::"public"."article_status"));
-
-
-
-CREATE POLICY "Public can view published content" ON "public"."events" FOR SELECT USING (("is_active" = true));
-
-
-
-CREATE POLICY "Public can view published content" ON "public"."ticket_types" FOR SELECT USING (("status" = 'public'::"public"."ticket_status"));
-
-
-
-CREATE POLICY "Staff can view their own permissions" ON "public"."permissions" FOR SELECT USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can create items for their own transactions" ON "public"."transaction_items" FOR INSERT WITH CHECK ((( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_items"."transaction_id")) = "auth"."uid"()));
-
-
-
-CREATE POLICY "Users can update their own, and admins can update all" ON "public"."users" FOR UPDATE USING ((("auth"."uid"() = "id") OR (( SELECT ("users_1"."role")::"text" AS "role"
-   FROM "public"."users" "users_1"
-  WHERE ("users_1"."id" = "auth"."uid"())) = 'admin'::"text")));
-
-
-
-CREATE POLICY "Users can view their own tickets" ON "public"."issued_tickets" FOR SELECT USING ((( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "issued_tickets"."transaction_id")) = "auth"."uid"()));
-
-
-
-CREATE POLICY "Users can view their own transaction items" ON "public"."transaction_items" FOR SELECT USING ((( SELECT "transactions"."user_id"
-   FROM "public"."transactions"
-  WHERE ("transactions"."id" = "transaction_items"."transaction_id")) = "auth"."uid"()));
-
-
-
-CREATE POLICY "Users can view their own transactions" ON "public"."transactions" FOR SELECT USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can view their own, and admins/staff can view all" ON "public"."users" FOR SELECT USING ((("auth"."uid"() = "id") OR "public"."is_admin_or_staff"()));
-
-
-
-ALTER TABLE "public"."articles" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."bank_configs" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."company_info" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."email_configs" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."email_templates" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."events" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."issued_tickets" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."modules" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."permissions" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."ticket_types" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."transaction_items" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."transaction_notes" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."vouchers" ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -1741,6 +1502,12 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."can_staff_manage_users"() TO "anon";
+GRANT ALL ON FUNCTION "public"."can_staff_manage_users"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."can_staff_manage_users"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."count_articles"("search_term" "text", "p_event_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."count_articles"("search_term" "text", "p_event_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."count_articles"("search_term" "text", "p_event_id" "uuid") TO "service_role";
@@ -1777,6 +1544,18 @@ GRANT ALL ON FUNCTION "public"."count_vouchers"("search_term" "text", "p_is_acti
 
 
 
+GRANT ALL ON TABLE "public"."users" TO "anon";
+GRANT ALL ON TABLE "public"."users" TO "authenticated";
+GRANT ALL ON TABLE "public"."users" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_all_users"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_all_users"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_all_users"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_overview_stats"("start_date" timestamp with time zone, "end_date" timestamp with time zone) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_dashboard_overview_stats"("start_date" timestamp with time zone, "end_date" timestamp with time zone) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_dashboard_overview_stats"("start_date" timestamp with time zone, "end_date" timestamp with time zone) TO "service_role";
@@ -1792,6 +1571,12 @@ GRANT ALL ON FUNCTION "public"."get_event_analytics"("start_date" timestamp with
 GRANT ALL ON FUNCTION "public"."get_issued_tickets_stats"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_issued_tickets_stats"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_issued_tickets_stats"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_my_role"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_my_role"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_my_role"() TO "service_role";
 
 
 
@@ -1861,12 +1646,6 @@ GRANT ALL ON FUNCTION "public"."increment_voucher_usage"("p_voucher_id" "uuid") 
 
 
 
-GRANT ALL ON FUNCTION "public"."is_admin_or_staff"() TO "anon";
-GRANT ALL ON FUNCTION "public"."is_admin_or_staff"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."is_admin_or_staff"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."search_issued_tickets"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "anon";
 GRANT ALL ON FUNCTION "public"."search_issued_tickets"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_issued_tickets"("search_term" "text", "p_event_id" "uuid", "p_is_invite" boolean, "p_is_used" boolean, "p_status" "public"."issued_ticket_status") TO "service_role";
@@ -1888,12 +1667,6 @@ GRANT ALL ON FUNCTION "public"."search_transactions"("search_term" "text") TO "s
 GRANT ALL ON FUNCTION "public"."search_transactions"("search_term" "text", "p_status" "text", "p_event_id" "uuid", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone) TO "anon";
 GRANT ALL ON FUNCTION "public"."search_transactions"("search_term" "text", "p_status" "text", "p_event_id" "uuid", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_transactions"("search_term" "text", "p_status" "text", "p_event_id" "uuid", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone) TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."users" TO "anon";
-GRANT ALL ON TABLE "public"."users" TO "authenticated";
-GRANT ALL ON TABLE "public"."users" TO "service_role";
 
 
 

@@ -1,14 +1,16 @@
+// src/components/admin/settings/TemplateEditor.tsx
 import { Paper, TextInput, Button, Stack, Title, LoadingOverlay } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { RichTextEditor } from '@mantine/tiptap';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState } from 'react';
-import { supabase } from '../../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
+import { SettingsApi } from '../../../services/api/settings'; // <-- IMPORT SERVICE
+import type { EmailTemplateType } from '../../../types'; // <-- IMPORT TYPE
 
 interface TemplateEditorProps {
-  templateType: 'purchase_confirmation' | 'invitation_ticket' | 'resend_ticket';
+  templateType: EmailTemplateType;
   title: string;
 }
 
@@ -24,31 +26,36 @@ export function TemplateEditor({ templateType, title }: TemplateEditorProps) {
   useEffect(() => {
     const fetchTemplate = async () => {
       setLoading(true);
-      const { data } = await supabase.from('email_templates').select('*').eq('type', templateType).single();
-      if (data) {
-        form.setValues({ subject: data.subject, content: data.content });
-        editor?.commands.setContent(data.content || '');
+      try {
+        const template = await SettingsApi.getEmailTemplate(templateType);
+        if (template) {
+          form.setValues({ subject: template.subject, content: template.content });
+          editor?.commands.setContent(template.content || '');
+        }
+      } catch (error: any) {
+        notifications.show({ title: 'Lỗi', message: error.message, color: 'red' });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchTemplate();
-  }, [templateType]);
+  }, [templateType, editor]); // Thêm editor vào dependency array
 
   const handleSubmit = async (values: { subject: string }) => {
     setLoading(true);
     const content = editor?.getHTML() || '';
-    const { error } = await supabase.from('email_templates').upsert({
-      type: templateType,
-      subject: values.subject,
-      content: content,
-    }, { onConflict: 'type' });
-
-    if (error) {
-      notifications.show({ title: 'Lỗi', message: 'Lưu mẫu thất bại', color: 'red' });
-    } else {
+    try {
+      await SettingsApi.upsertEmailTemplate({
+        type: templateType,
+        subject: values.subject,
+        content: content,
+      });
       notifications.show({ title: 'Thành công', message: 'Đã lưu mẫu email.' });
+    } catch (error: any) {
+      notifications.show({ title: 'Lỗi', message: 'Lưu mẫu thất bại', color: 'red' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -58,23 +65,23 @@ export function TemplateEditor({ templateType, title }: TemplateEditorProps) {
         <Stack>
           <Title order={4}>{title}</Title>
           <TextInput required label="Tiêu đề Email" {...form.getInputProps('subject')} />
-<RichTextEditor editor={editor}>
-                            <RichTextEditor.Toolbar sticky stickyOffset={60}>
-                                <RichTextEditor.ControlsGroup>
-                                    <RichTextEditor.Bold /> <RichTextEditor.Italic /> <RichTextEditor.Underline />
-                                </RichTextEditor.ControlsGroup>
-                                <RichTextEditor.ControlsGroup>
-                                    <RichTextEditor.H1 /> <RichTextEditor.H2 /> <RichTextEditor.H3 />
-                                </RichTextEditor.ControlsGroup>
-                                <RichTextEditor.ControlsGroup>
-                                    <RichTextEditor.BulletList /> <RichTextEditor.OrderedList />
-                                </RichTextEditor.ControlsGroup>
-                                <RichTextEditor.ControlsGroup>
-                                    <RichTextEditor.Link /> <RichTextEditor.Unlink />
-                                </RichTextEditor.ControlsGroup>
-                            </RichTextEditor.Toolbar>
-                            <RichTextEditor.Content />
-                        </RichTextEditor>
+            <RichTextEditor editor={editor}>
+                <RichTextEditor.Toolbar sticky stickyOffset={60}>
+                    <RichTextEditor.ControlsGroup>
+                        <RichTextEditor.Bold /> <RichTextEditor.Italic /> <RichTextEditor.Underline />
+                    </RichTextEditor.ControlsGroup>
+                    <RichTextEditor.ControlsGroup>
+                        <RichTextEditor.H1 /> <RichTextEditor.H2 /> <RichTextEditor.H3 />
+                    </RichTextEditor.ControlsGroup>
+                    <RichTextEditor.ControlsGroup>
+                        <RichTextEditor.BulletList /> <RichTextEditor.OrderedList />
+                    </RichTextEditor.ControlsGroup>
+                    <RichTextEditor.ControlsGroup>
+                        <RichTextEditor.Link /> <RichTextEditor.Unlink />
+                    </RichTextEditor.ControlsGroup>
+                </RichTextEditor.Toolbar>
+                <RichTextEditor.Content />
+            </RichTextEditor>
           <Button type="submit" mt="md" style={{ alignSelf: 'flex-end' }}>Lưu mẫu</Button>
         </Stack>
       </form>

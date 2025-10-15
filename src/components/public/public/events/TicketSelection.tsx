@@ -1,9 +1,9 @@
 import { Paper, Title, Badge, Stack, Group, Text, Divider, Button, ActionIcon, NumberInput } from '@mantine/core';
 import { useState, useMemo, useEffect } from 'react';
-import type { EventWithDetails } from '../../types';
+import type { EventWithDetails } from '../../../../types';
 import { IconPlus, IconMinus } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useCartStore } from '../../store/cartStore'; // 1. Import "kho" giỏ hàng (Zustand)
+import { useCartStore } from '../../../../store/cartStore'; // 1. Import "kho" giỏ hàng (Zustand)
 import { useNavigate } from 'react-router-dom';     // 2. Import hook điều hướng
 
 interface TicketSelectionProps {

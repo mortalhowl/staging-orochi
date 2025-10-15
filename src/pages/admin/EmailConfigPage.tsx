@@ -1,10 +1,11 @@
+// src/pages/admin/EmailConfigPage.tsx
 import { useEffect, useState } from 'react';
 import { Paper, Title, TextInput, Button, Stack, NumberInput, Alert, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { supabase } from '../../services/supabaseClient';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { IconInfoCircle } from '@tabler/icons-react';
+import { SettingsApi } from '../../services/api/settings'; // <-- IMPORT SERVICE
 
 interface EmailConfigForm {
   sender_email: string;
@@ -14,14 +15,8 @@ interface EmailConfigForm {
 
 export function EmailConfigPage() {
   const [loading, { open: startLoading, close: endLoading }] = useDisclosure(false);
-  const [configId, setConfigId] = useState<string | null>(null);
-
   const form = useForm<EmailConfigForm>({
-    initialValues: {
-      sender_email: '',
-      smtp_host: 'smtp.gmail.com',
-      smtp_port: 587,
-    },
+    initialValues: { sender_email: '', smtp_host: 'smtp.gmail.com', smtp_port: 587 },
     validate: {
       sender_email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Email không hợp lệ'),
       smtp_host: (value) => (value.trim().length > 0 ? null : 'SMTP host không được trống'),
@@ -31,58 +26,38 @@ export function EmailConfigPage() {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      const { data, error } = await supabase.from('email_configs').select('*').limit(1);
-
-      if (error) {
-        console.error('Error fetching email config:', error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        const config = data[0];
-        form.setValues(config);
-        setConfigId(config.id);
+      try {
+        const config = await SettingsApi.getEmailConfig();
+        if (config) {
+          form.setValues(config);
+        }
+      } catch (error: any) {
+        notifications.show({ title: 'Lỗi', message: error.message, color: 'red' });
       }
     };
     fetchConfig();
   }, []);
 
-const handleSubmit = async (values: EmailConfigForm) => {
+  const handleSubmit = async (values: EmailConfigForm) => {
     startLoading();
     try {
-        const submissionData = { ...values, use_tls: true }; // LUÔN GÁN use_tls = true
-        let error;
-
-        if (configId) {
-            ({ error } = await supabase.from('email_configs').update(submissionData).eq('id', configId));
-        } else {
-            const { data, error: insertError } = await supabase
-                .from('email_configs')
-                .insert([submissionData]) // Gửi submissionData
-                .select()
-                .single();
-            error = insertError;
-            if (data) setConfigId(data.id);
-        }
-        if (error) throw error;
-        notifications.show({ title: 'Thành công', message: 'Đã lưu cấu hình email.', color: 'green' });
+      await SettingsApi.upsertEmailConfig(values);
+      notifications.show({ title: 'Thành công', message: 'Đã lưu cấu hình email.', color: 'green' });
     } catch (err: any) {
-        notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
+      notifications.show({ title: 'Lỗi', message: err.message, color: 'red' });
     } finally {
-        endLoading();
+      endLoading();
     }
-};
+  };
 
   return (
     <Paper withBorder p="xl" radius="md" maw={600} mx="auto">
       <Title order={3} mb="lg">Cấu hình Gửi Email (SMTP)</Title>
-      
       <Alert color="blue" title="Lưu ý quan trọng" icon={<IconInfoCircle />} mb="xl">
         <Text size="sm">
           Mật khẩu ứng dụng Gmail (App Password) phải được cấu hình dưới dạng Secret trong mục <b>Project Settings &gt; Edge Functions</b> bởi lập trình viên để đảm bảo an toàn.
         </Text>
       </Alert>
-
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
           <TextInput required label="Email người gửi" placeholder="your-email@gmail.com" {...form.getInputProps('sender_email')} />
