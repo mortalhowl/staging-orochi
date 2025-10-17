@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .from('users')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
       
       if (profileError) throw profileError;
 
