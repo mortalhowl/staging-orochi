@@ -36,6 +36,7 @@ export interface EmailConfig {
   sender_email: string;
   smtp_host: string;
   smtp_port: number;
+  provider: 'smtp' | 'resend';
 }
 
 export interface EmailTemplate {
