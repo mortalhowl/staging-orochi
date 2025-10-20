@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/admin/check-in",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self)"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/|_vercel/|.*\\..*).*)",

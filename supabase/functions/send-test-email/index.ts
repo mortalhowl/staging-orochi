@@ -1,4 +1,4 @@
-// supabase/functions/send-ticket-email/index.ts
+// supabase/functions/send-test-email/index.ts
 
 // --- Triple-Slash Directives for Deno types ---
 /// <reference types="https://deno.land/x/deno/cli/types/v1.36.0/index.d.ts" />
@@ -8,43 +8,18 @@ import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-
 import { corsHeaders } from '../_shared/cors.ts'; //
 import nodemailer from 'npm:nodemailer';
 import qrcode from 'npm:qrcode';
-// (Optional) Import base64 decoder if needed, fetch handles data urls directly
-// import { decode as base64Decode } from 'https://deno.land/std@0.100.0/encoding/base64.ts';
+// Import function để chuyển đổi data URL sang Blob/ArrayBuffer (nếu cần)
+// Hoặc sử dụng qrcode.toBuffer() nếu có
+// Ví dụ: import { decode as base64Decode } from 'https://deno.land/std@0.100.0/encoding/base64.ts';
 
-console.log(`[LOG] Function Initializing: send-ticket-email (v2.4 using Storage URL)`); // Update version
+console.log(`[LOG] Function Initializing: send-test-email (v2.3 using Storage URL)`); // Update version
 
 // --- Interfaces (Giữ nguyên) ---
-interface TicketTypeInfo {
-    name: string;
-}
-interface IssuedTicketInfo {
-    id: string;
-    ticket_types: TicketTypeInfo | null;
-}
-interface UserInfo {
-    email: string;
-    full_name: string | null;
-}
-interface EventInfo {
-    title: string;
-}
-interface TransactionInfo {
-    id: string;
-    total_amount: number;
-    type: 'sale' | 'invitation';
-    users: UserInfo;
-    events: EventInfo;
-    issued_tickets: IssuedTicketInfo[];
-}
 interface EmailConfig {
     provider: 'smtp' | 'resend' | null;
     sender_email: string | null;
     smtp_host: string | null;
     smtp_port: number | null;
-}
-interface EmailTemplate {
-    subject: string;
-    content: string;
 }
 
 // --- Helper Function for Logging (Giữ nguyên) ---
@@ -52,7 +27,7 @@ async function logEmailSend(
     supabaseAdmin: SupabaseClient,
     details: {
         functionName: string;
-        transactionId?: string | null;
+        transactionId?: string | null; // Không dùng trong test email
         recipientEmail: string;
         subject: string;
         status: 'success' | 'failed';
@@ -82,14 +57,12 @@ async function logEmailSend(
     }
 }
 
-// --- Function to convert Data URL to Blob (Giữ nguyên) ---
+// --- Function to convert Data URL to Blob (cần thiết cho Storage upload) ---
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
     const res = await fetch(dataUrl);
-    if (!res.ok) {
-        throw new Error(`Failed to fetch data URL: ${res.status} ${res.statusText}`);
-    }
     return await res.blob();
 }
+
 
 // --- Main Function Logic ---
 Deno.serve(async (req: Request) => {
@@ -97,11 +70,10 @@ Deno.serve(async (req: Request) => {
         return new Response('ok', { headers: corsHeaders });
     }
 
-    let transactionId: string | undefined;
     let recipientEmail = '';
-    let emailSubject = 'Orochi Ticket Email';
+    const emailSubject = 'Orochi - Email Test (Storage URL)'; // Cập nhật Subject
     let providerUsed: 'smtp' | 'resend' = 'smtp';
-    const functionName = 'send-ticket-email';
+    const functionName = 'send-test-email'; // Định nghĩa tên function
 
     const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -111,13 +83,11 @@ Deno.serve(async (req: Request) => {
     try {
         console.log('[LOG] Invocation started.');
         const body = await req.json();
-        transactionId = body.transactionId;
-        console.log('[LOG] Input Data:', body);
-
-        if (!transactionId) {
-            throw new Error('Transaction ID is required.');
+        recipientEmail = body.recipientEmail; // Gán vào biến ngoài try-catch
+        if (!recipientEmail) {
+            throw new Error('Recipient email is required.');
         }
-
+        console.log(`[LOG] Attempting to send test email to: ${recipientEmail}`);
         console.log('[LOG] Supabase admin client created.');
 
         // --- Fetch Configuration and Secrets ---
@@ -136,136 +106,55 @@ Deno.serve(async (req: Request) => {
         const resendApiKey = Deno.env.get('RESEND_API_KEY');
         const gmailAppPassword = Deno.env.get('GMAIL_APP_PASSWORD');
 
-        // --- Fetch Transaction, User, Event, Tickets, Template ---
-        console.log('[LOG] Fetching transaction details...');
-        const { data: transactionData, error: transactionError } = await supabaseAdmin
-            .from('transactions')
-            .select('*, users!inner(*), events!inner(*), issued_tickets!inner(id, ticket_types!inner(name))')
-            .eq('id', transactionId)
-            .single();
-        if (transactionError || !transactionData) {
-            throw new Error(`Failed to fetch complete transaction details for ${transactionId}: ${transactionError?.message || 'Data missing'}`);
+        // --- Generate QR Code and Upload to Storage ---
+        console.log('[LOG] Generating and uploading test QR code...');
+        const testQrData = `Test email for ${recipientEmail} at ${new Date().toISOString()}`;
+        const qrCodeDataURL = await qrcode.toDataURL(testQrData);
+
+        // Chuyển Data URL thành Blob
+        const qrBlob = await dataUrlToBlob(qrCodeDataURL);
+
+        // Tạo tên file duy nhất (ví dụ: test/test_email_timestamp.png)
+        const filePath = `test/test_${recipientEmail}_${Date.now()}.png`;
+
+        // Upload lên bucket 'qr-codes'
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+            .from('qr-codes') // ** Tên bucket công khai của bạn **
+            .upload(filePath, qrBlob, {
+                contentType: 'image/png',
+                upsert: true, // Ghi đè nếu file đã tồn tại (hữu ích khi test)
+            });
+
+        if (uploadError) {
+            throw new Error(`Failed to upload QR code to storage: ${uploadError.message}`);
         }
-        const transaction = transactionData as TransactionInfo;
-        if (!transaction.users || !transaction.events || !transaction.issued_tickets) {
-             throw new Error(`Incomplete transaction data for ${transactionId} despite inner joins.`);
+
+        // Lấy URL công khai
+        const { data: publicUrlData } = supabaseAdmin.storage
+            .from('qr-codes') // ** Tên bucket công khai của bạn **
+            .getPublicUrl(filePath);
+
+        const qrPublicUrl = publicUrlData?.publicUrl;
+        if (!qrPublicUrl) {
+            throw new Error('Failed to get public URL for QR code.');
         }
-        recipientEmail = transaction.users.email;
-        console.log(`[LOG] Fetched transaction details successfully for ${recipientEmail}.`);
+        console.log(`[LOG] QR code uploaded successfully: ${qrPublicUrl}`);
 
-        const templateType = transaction.type === 'invitation' ? 'invitation_ticket' : 'purchase_confirmation';
-        console.log(`[LOG] Fetching email template: ${templateType}`);
-        const { data: templateData, error: templateError } = await supabaseAdmin
-            .from('email_templates')
-            .select('*')
-            .eq('type', templateType)
-            .single();
-        if (templateError || !templateData) {
-            throw new Error(`Email template "${templateType}" not found or failed to load: ${templateError?.message}`);
-        }
-        const template = templateData as EmailTemplate;
-        emailSubject = template.subject;
-        console.log('[LOG] Fetched email template successfully.');
-
-        // --- Generate Ticket HTML with Storage URLs ---
-        console.log(`[LOG] Generating ${transaction.issued_tickets.length} tickets with Storage URLs...`);
-        // Use Promise.all to handle multiple async operations (QR generation + upload)
-        const generatedTicketsData = await Promise.all(
-            transaction.issued_tickets.map(async (issuedTicket: IssuedTicketInfo, index: number) => {
-                const total = transaction.issued_tickets.length;
-                const ticketTypeName = issuedTicket.ticket_types?.name ?? 'Không xác định';
-
-                // 1. Generate QR Code
-                const qrCodeDataURL = await qrcode.toDataURL(issuedTicket.id);
-
-                // 2. Convert to Blob
-                const qrBlob = await dataUrlToBlob(qrCodeDataURL);
-
-                // 3. Define Storage Path
-                const filePath = `tickets/${issuedTicket.id}.png`; // Store each ticket's QR in a 'tickets' folder
-
-                // 4. Upload to Storage
-                const { error: uploadError } = await supabaseAdmin.storage
-                    .from('qr-codes') // ** Tên bucket công khai **
-                    .upload(filePath, qrBlob, { contentType: 'image/png', upsert: true });
-
-                if (uploadError) {
-                    // Log error but try to continue generating other tickets
-                    console.error(`[ERROR] Failed to upload QR for ticket ${issuedTicket.id}:`, uploadError);
-                    // Decide how to handle this - maybe use a placeholder URL or throw? For now, we'll let getPublicUrl handle it.
-                }
-
-                // 5. Get Public URL
-                const { data: publicUrlData } = supabaseAdmin.storage
-                    .from('qr-codes') // ** Tên bucket công khai **
-                    .getPublicUrl(filePath);
-
-                const qrPublicUrl = publicUrlData?.publicUrl;
-                if (!qrPublicUrl) {
-                    console.error(`[ERROR] Failed to get public URL for ticket ${issuedTicket.id}. Using placeholder.`);
-                    // Optionally define a placeholder image URL here
-                }
-                const imgSrc = qrPublicUrl || 'URL_TO_PLACEHOLDER_IMAGE'; // Use URL or placeholder
-
-                // 6. Generate HTML using the Public URL
-                const html = `
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse: collapse;">
-                      <tr>
-                        <td style="padding: 0; vertical-align: top; width: 65%;">
-                          <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #088e8b;">${transaction.events.title}</h3>
-                          <p style="margin: 4px 0; font-size: 14px;"><strong>Khách hàng:</strong></p>
-                          <p style="margin: 0 0 8px 0; font-size: 14px;">${transaction.users.full_name || recipientEmail}</p>
-                          <p style="margin: 4px 0; font-size: 14px;"><strong>Loại vé:</strong></p>
-                          <p style="margin: 0 0 8px 0; font-size: 14px;">${ticketTypeName}</p>
-                          <p style="margin: 4px 0; font-size: 14px;"><strong>Mã vé:</strong></p>
-                          <p style="margin: 0 0 8px 0; font-size: 12px;"><span style="color: #088e8b; font-family: monospace;">${issuedTicket.id}</span></p>
-                        </td>
-                        <td style="position: relative; width: 1px; padding: 0 15px;">
-                          <div style="position: absolute; top: 10px; bottom: 10px; left: 50%; transform: translateX(-50%); border-left: 1px dashed #ccc;"></div>
-                        </td>
-                        <td align="center" style="padding: 0; vertical-align: top; width: 35%;">
-                          <p style="font-size: 8px; color: #555; margin: 0 0 5px 0;"><strong>${index + 1} / ${total}</strong></p>
-                          {/* *** Use Public URL in src *** */}
-                          <img src="${imgSrc}" alt="QR Code" width="120" height="120" style="display: block; margin: 0 auto; border: 1px solid #eee;" />
-                          <p style="font-size: 8px; color: #555; margin-top: 5px;">Quét mã này tại cổng</p>
-                        </td>
-                      </tr>
-                    </table>`;
-
-                return html; // Return only the generated HTML string
-            })
-        );
-
-        // Filter out any potential nulls if error handling decided to return null/undefined
-        const validTicketHtmls = generatedTicketsData.filter(html => typeof html === 'string');
-        const allTicketsHtml = validTicketHtmls.join('<hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">');
-        console.log('[LOG] All ticket HTML generated with Storage URLs.');
-
-        // --- Prepare Email Content (Giữ nguyên) ---
-        let content = template.content;
-        let subject = template.subject;
-        const replacements = {
-            '{{ten_khach_hang}}': transaction.users.full_name || recipientEmail,
-            '{{ten_su_kien}}': transaction.events.title,
-            '{{ma_don_hang}}': transactionId.split('-')[0].toUpperCase(),
-            '{{tong_tien}}': transaction.total_amount.toLocaleString('vi-VN') + 'đ',
-            '{{danh_sach_ve}}': allTicketsHtml, // Use the HTML generated with public URLs
-        };
-        for (const [key, value] of Object.entries(replacements)) {
-            content = content.replaceAll(key, value || '');
-            subject = subject.replaceAll(key, value || '');
-        }
-        const finalHtml = `<div style="max-width: 600px; margin: 0 auto; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: Arial, sans-serif;">${content}</div>`;
-        emailSubject = subject;
-        console.log('[LOG] Placeholders replaced. Final subject:', emailSubject);
+        // --- Prepare Email Content with Public URL ---
+        const htmlBody = `
+            <p>Đây là email gửi thử từ hệ thống Orochi.</p>
+            <p>Cấu hình gửi email đang hoạt động!</p>
+            <p>Mã QR Test:</p>
+            <img src="${qrPublicUrl}" alt="Test QR Code" width="150" height="150" style="display: block;" />
+            <p><small>URL: ${qrPublicUrl}</small></p>
+        `;
+        const fromAddress = `Orochi System <${emailConfig.sender_email}>`;
 
         // --- Send Email ---
         let messageId: string | undefined;
         let sendError: Error | null = null;
 
         try {
-            const fromAddress = `"${transaction.events.title}" <${emailConfig.sender_email}>`;
-
             if (providerUsed === 'resend') {
                 console.log('[LOG] Sending via Resend...');
                 if (!resendApiKey) throw new Error('Resend API Key is not configured.');
@@ -277,8 +166,8 @@ Deno.serve(async (req: Request) => {
                         from: fromAddress,
                         to: recipientEmail,
                         subject: emailSubject,
-                        html: finalHtml,
-                        // No attachments needed
+                        html: htmlBody,
+                        // Không cần attachments
                     }),
                 });
                 if (!resendResponse.ok) {
@@ -304,8 +193,8 @@ Deno.serve(async (req: Request) => {
                     from: fromAddress,
                     to: recipientEmail,
                     subject: emailSubject,
-                    html: finalHtml,
-                    // No attachments needed
+                    html: htmlBody,
+                    // Không cần attachments
                 };
                 const info = await transporter.sendMail(mailOptions);
                 messageId = info.messageId;
@@ -317,10 +206,9 @@ Deno.serve(async (req: Request) => {
             console.error('[ERROR] Email sending failed:', sendError);
         }
 
-        // --- Log Result (Giữ nguyên) ---
+        // --- Log Result ---
         await logEmailSend(supabaseAdmin, {
             functionName: functionName,
-            transactionId: transactionId,
             recipientEmail: recipientEmail,
             subject: emailSubject,
             status: sendError ? 'failed' : 'success',
@@ -329,13 +217,13 @@ Deno.serve(async (req: Request) => {
             messageId: messageId,
         });
 
-        // --- Return Response (Giữ nguyên) ---
+        // --- Return Response ---
         return new Response(JSON.stringify({ success: !sendError, messageId: messageId, error: sendError ? sendError.message : null }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         });
 
-    } catch (error) { // Catch fatal errors (Giữ nguyên)
+    } catch (error) { // Catch fatal errors
         console.error(`--- FATAL ERROR in ${functionName} ---`, error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         await logEmailSend(supabaseAdmin, {
