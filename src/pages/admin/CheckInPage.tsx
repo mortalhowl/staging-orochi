@@ -1,6 +1,6 @@
 // src/pages/admin/CheckInPage.tsx
 import { useState, useEffect } from 'react';
-import { Container, Select, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon } from '@mantine/core';
+import { Container, Select, Stack, Divider, TextInput, Button, Center, Loader, Alert, Text, Group, Modal, Switch, Box, ActionIcon, ScrollArea, Paper} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { supabase } from '../../services/supabaseClient'; // Vẫn cần để lấy danh sách sự kiện
 import { Scanner } from '@yudiel/react-qr-scanner';
@@ -73,6 +73,7 @@ export function CheckInPage() {
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
   const [isUsingBackCamera, setIsUsingBackCamera] = useState(true);
+  const [cameraLog, setCameraLog] = useState<string[]>([]);
 
   const handleToggleCamera = () => {
     if (!availableCameras.length) return;
@@ -105,32 +106,115 @@ export function CheckInPage() {
     fetchEvents();
   }, []);
 
-  // Lấy danh sách camera khi bật camera
+// Lấy danh sách camera khi bật camera
   useEffect(() => {
+    const log = (message: string) => {
+      console.log(`[Camera Check] ${message}`);
+      setCameraLog(prev => [...prev, `${new Date().toLocaleTimeString()} - ${message}`]); // Thêm log vào state
+    };
+
     const getCameras = async () => {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        setAvailableCameras(cameras);
-        // ❌ Không setSelectedCamera tự động nữa
-      } catch (error) {
-        console.error('Lỗi khi lấy danh sách camera:', error);
+      log('Attempting to get media devices...');
+      setCameraLog(['Attempting to get media devices...']); // Reset log khi bắt đầu
+
+      // Kiểm tra HTTPS
+      if (window.location.protocol !== 'https:') {
+        log('ERROR: Page is not served over HTTPS. Camera access denied.');
         notifications.show({
-          title: 'Lỗi Camera',
-          message: 'Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.',
+          title: 'Lỗi HTTPS',
+          message: 'Trang phải được phục vụ qua HTTPS để truy cập camera.',
+          color: 'red'
+        });
+        setIsCameraOn(false); // Tắt switch camera
+        return;
+      } else {
+         log('HTTPS check passed.');
+      }
+
+      // Kiểm tra API hỗ trợ
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        log('ERROR: navigator.mediaDevices.enumerateDevices is not supported by this browser.');
+         notifications.show({
+          title: 'Trình duyệt không hỗ trợ',
+          message: 'Trình duyệt của bạn không hỗ trợ API cần thiết để liệt kê camera.',
           color: 'red'
         });
         setIsCameraOn(false);
+        return;
+      } else {
+         log('enumerateDevices API is supported.');
+      }
+
+      try {
+        // Bước 1: Yêu cầu quyền truy cập (quan trọng)
+        // enumerateDevices có thể không trả về label nếu chưa có quyền
+        log('Requesting camera permission (getUserMedia)...');
+        try {
+            // Yêu cầu stream chỉ để kích hoạt prompt xin quyền
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            log('getUserMedia successful (permission likely granted or previously granted).');
+            // Dừng stream ngay lập tức vì chỉ cần xin quyền
+            stream.getTracks().forEach(track => track.stop());
+        } catch (permError: any) {
+             log(`getUserMedia ERROR: ${permError.name} - ${permError.message}`);
+             // Không dừng ở đây, vẫn thử enumerateDevices
+             notifications.show({
+                title: 'Lỗi Quyền Camera',
+                message: `Không thể lấy quyền truy cập camera: ${permError.message}. Hãy kiểm tra cài đặt trình duyệt.`,
+                color: 'orange',
+                autoClose: 7000
+            });
+            // Vẫn tiếp tục thử enumerateDevices, có thể nó trả về deviceId mà không có label
+        }
+
+        // Bước 2: Liệt kê thiết bị
+        log('Calling enumerateDevices...');
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        log(`enumerateDevices returned ${devices.length} devices.`);
+
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        log(`Found ${cameras.length} video input devices.`);
+
+        if (cameras.length > 0) {
+          setAvailableCameras(cameras);
+          log('Available cameras:');
+          cameras.forEach((cam, index) => {
+            log(`  [${index}] deviceId: ${cam.deviceId.substring(0,10)}..., label: "${cam.label}", kind: ${cam.kind}, groupId: ${cam.groupId.substring(0,10)}...`);
+          });
+          // Không tự động chọn camera nữa, để người dùng chọn
+          // if (!selectedCamera && cameras[0]) {
+          //   log(`Auto-selecting first camera: ${cameras[0].deviceId.substring(0,10)}...`);
+          //   setSelectedCamera(cameras[0].deviceId);
+          // }
+        } else {
+          log('No video input devices found.');
+          setAvailableCameras([]);
+          notifications.show({
+            title: 'Không tìm thấy camera',
+            message: 'Không tìm thấy thiết bị camera nào trên hệ thống.',
+            color: 'yellow'
+          });
+        }
+      } catch (error: any) {
+        log(`ENUMERATE DEVICES CRITICAL ERROR: ${error.name} - ${error.message}`);
+        notifications.show({
+          title: 'Lỗi Camera Nghiêm trọng',
+          message: `Không thể liệt kê thiết bị camera: ${error.message}`,
+          color: 'red'
+        });
+        setIsCameraOn(false); // Tắt switch nếu có lỗi nghiêm trọng
       }
     };
 
     if (isCameraOn) {
       getCameras();
     } else {
+      log('Camera turned off.');
       setAvailableCameras([]);
-      // setSelectedCamera(''); // reset lại khi tắt
+      // setSelectedCamera(''); // Reset khi tắt
     }
-  }, [isCameraOn]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCameraOn]); // Chỉ chạy khi isCameraOn thay đổi
 
   const handleScanResult = (results: { rawValue: string }[]) => {
     const code = results?.[0]?.rawValue;
@@ -319,6 +403,18 @@ export function CheckInPage() {
                 <IconChecks size={18} />
               </ActionIcon>
             </Group>
+
+            {/* Hiển thị Log (Để Debug) */}
+             <Paper withBorder p="xs" mt="md" radius="sm">
+               <Text size="xs" fw={500} mb={5}>Camera Debug Log:</Text>
+               <ScrollArea h={100}>
+                 <Stack gap={2}>
+                   {cameraLog.map((line, index) => (
+                     <Text key={index} size="xs" c="dimmed" ff="monospace">{line}</Text>
+                   ))}
+                 </Stack>
+               </ScrollArea>
+             </Paper>
           </Stack>
         )}
       </Container>
